@@ -3,6 +3,8 @@
 
 DeviceHive OBD2 Gateway collect vehicle's self-diagnostic information and send it cloud. This gateway works with Anroid devices and Bluetooth ELM327 adaptors.
 
+![](obd2-architecture.png?raw=true)
+
 
 **DeviceHive license**
 ------------------

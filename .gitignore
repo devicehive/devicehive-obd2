@@ -43,8 +43,7 @@ proguard/
 .navigation/
 
 # Other stuff
-/.idea/workspace.xml
-/.idea/libraries
+/.idea
 /captures
 .DS_Store
 *.iml
