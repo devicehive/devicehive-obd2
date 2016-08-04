@@ -87,6 +87,21 @@
                     android:imeOptions="actionNext" />
             </LinearLayout>
 
+            <LinearLayout style="@style/ListItem"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_obd2"
+                    android:textAppearance="@android:style/TextAppearance.Medium" />
+
+                <Spinner
+                    android:id="@+id/bt_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@android:style/TextAppearance.Medium" />
+            </LinearLayout>
+
             <View style="@style/ListItemDivider" />
 
             <RelativeLayout

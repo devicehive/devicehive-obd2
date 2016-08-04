@@ -3,6 +3,7 @@ package com.dataart.obd2;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
@@ -17,8 +18,13 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListAdapter;
+import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.dataart.android.devicehive.Notification;
@@ -28,6 +34,9 @@ import com.dataart.obd2.devicehive.DevicePreferences;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+
+import java.util.Objects;
+import java.util.Set;
 
 import timber.log.Timber;
 
@@ -41,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     private TextView hintText;
     private Button serviceButton;
     private Button restartServiceButton;
+    private Spinner btDevicesSpinner;
     private DevicePreferences prefs;
     private boolean isServiceStarted;
     private final View.OnClickListener restartClickListener = new View.OnClickListener() {
@@ -61,6 +71,17 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         }
         return false;
     };
+    private final AdapterView.OnItemSelectedListener btItemSelectedListener = new AdapterView.OnItemSelectedListener() {
+        @Override
+        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+            onDataChanged();
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> adapterView) {
+        }
+    };
+
     private final TextWatcher changeWatcher = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
@@ -130,6 +151,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         gatewayIdEditText = (EditText) findViewById(R.id.settings_gateway_id);
         accessKeyEditText = (EditText) findViewById(R.id.accesskey_edit);
         hintText = (TextView) findViewById(R.id.hintText);
+        btDevicesSpinner = (Spinner) findViewById(R.id.bt_list);
 
         resetValues();
 
@@ -153,6 +175,8 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
 
         accessKeyEditText.setOnEditorActionListener(changeListener);
         accessKeyEditText.addTextChangedListener(changeWatcher);
+
+        btDevicesSpinner.setOnItemSelectedListener(btItemSelectedListener);
 
         if (isServiceRunning()) {
             onServiceRunning();
@@ -225,9 +249,11 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         final String newUrl = serverUrlEditText.getText().toString();
         final String newGatewayId = gatewayIdEditText.getText().toString();
         final String newAccessKey = accessKeyEditText.getText().toString();
+        final Object newMac = btDevicesSpinner.getSelectedItem();
         return !(prefs.getServerUrl().equals(newUrl) &&
                 prefs.getGatewayId().equals(newGatewayId) &&
-                prefs.getAccessKey().equals(newAccessKey));
+                prefs.getAccessKey().equals(newAccessKey) &&
+                (newMac != null && newMac.toString().endsWith(prefs.getOBD2Mac())));
     }
 
     private void onDataChanged() {
@@ -263,6 +289,22 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
                         ? ""
                         : accessKey
         );
+
+        String obd2mac = prefs.getOBD2Mac();
+        ArrayAdapter listAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_dropdown_item);
+        btDevicesSpinner.setAdapter(listAdapter);
+
+        Set<BluetoothDevice> devices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
+        if (devices.size() > 0) {
+            for (BluetoothDevice device : devices) {
+                listAdapter.add(device.getName() + "  " + device.getAddress());
+                if (device.getAddress().equals(obd2mac)) {
+                    btDevicesSpinner.setSelection(listAdapter.getCount() - 1);
+                }
+            }
+        }
+        listAdapter.notifyDataSetChanged();
     }
 
     private void resetErrors() {
@@ -298,11 +340,15 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         final String serverUrl = serverUrlEditText.getText().toString();
         final String gatewayId = gatewayIdEditText.getText().toString();
         final String accessKey = accessKeyEditText.getText().toString();
+        final Object obd2mac = btDevicesSpinner.getSelectedItem();
 
         prefs.setAccessKeySync(accessKey);
         prefs.setServerUrlSync(serverUrl);
         prefs.setGatewayIdSync(gatewayId);
-
+        if (obd2mac != null) {
+            final String mac = obd2mac.toString();
+            prefs.setOBD2MacSync(mac.substring(mac. lastIndexOf(" ") + 1));
+        }
     }
 
     @Override

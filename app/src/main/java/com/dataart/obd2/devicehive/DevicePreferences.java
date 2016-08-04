@@ -19,6 +19,9 @@ public class DevicePreferences {
     private final static String KEY_ACCESSKEY= NAMESPACE
             .concat(".KEY_ACCESSKEY");
 
+    private final static String KEY_OBD2MAC= NAMESPACE
+            .concat(".OBD2_MAC");
+
     private final Context context;
 
     private final SharedPreferences preferences;
@@ -39,6 +42,10 @@ public class DevicePreferences {
         return preferences.getString(KEY_GATEWAY_ID, null);
     }
 
+    public String getOBD2Mac() {
+        return preferences.getString(KEY_OBD2MAC, null);
+    }
+
     public void setServerUrlSync(String serverUrl) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_SERVER_URL, serverUrl);
@@ -55,9 +62,16 @@ public class DevicePreferences {
         return preferences.getString(KEY_ACCESSKEY, null);
     }
 
+
     public void setAccessKeySync(String accessKey) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_ACCESSKEY, accessKey);
+        editor.commit();
+    }
+
+    public void setOBD2MacSync(String mac) {
+        final SharedPreferences.Editor editor = preferences.edit();
+        editor.putString(KEY_OBD2MAC, mac);
         editor.commit();
     }
 

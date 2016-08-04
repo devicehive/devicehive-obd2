@@ -9,6 +9,7 @@
     <string name="settings_password">Password</string>
     <string name="settings_accesskey">Access Key</string>
     <string name="settings_restart_hint">You have to restart the service in order to apply new parameters</string>
+    <string name="settings_obd2">Choose your Bluetooth OBD2 adapter from list of paired devices</string>
 
     <string name="button_restart">Restart</string>
     <string name="button_start">Start service</string>
