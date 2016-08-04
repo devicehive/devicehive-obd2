@@ -19,7 +19,7 @@ import java.util.List;
 
 public class DeviceHive extends Device {
 
-    private static final String TAG = "AndroidBTLE";
+    private static final String TAG = "AndroidOBD2";
 
     private List<RegistrationListener> registrationListeners = new LinkedList<RegistrationListener>();
     private CommandListener commandListener;
@@ -48,8 +48,8 @@ public class DeviceHive extends Device {
     }
 
     private static DeviceData getTestDeviceData() {
-        final Network network = new Network("AndroidBTLE", "");
-        final DeviceClass deviceClass = new DeviceClass("Android BTLE Device", BuildConfig.VERSION_NAME);
+        final Network network = new Network("AndroidOBD", "");
+        final DeviceClass deviceClass = new DeviceClass("Android OBD2 Device", BuildConfig.VERSION_NAME);
 
         return new DeviceData(
                 new DevicePreferences().getGatewayId(),
