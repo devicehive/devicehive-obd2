@@ -5,6 +5,10 @@ DeviceHive OBD2 Gateway collect vehicle's self-diagnostic information and send i
 
 ![](obd2-architecture.png?raw=true)
 
+** Legacy **
+This project is based on:
+- DeivceHive Android BLE gateway - https://github.com/devicehive/android-ble
+- OBD-II Java API - https://github.com/pires/obd-java-api
 
 **DeviceHive license**
 ------------------
