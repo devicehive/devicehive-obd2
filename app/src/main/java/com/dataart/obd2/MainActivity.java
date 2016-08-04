@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -24,6 +25,9 @@ import com.dataart.android.devicehive.Notification;
 import com.dataart.obd2.obd2_gateway.OBD2Service;
 import com.dataart.obd2.devicehive.DeviceHive;
 import com.dataart.obd2.devicehive.DevicePreferences;
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 import timber.log.Timber;
 
@@ -71,6 +75,11 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
             onDataChanged();
         }
     };
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +104,9 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         }
 
         init();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     private void fatalDialog(int message) {
@@ -122,6 +134,12 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         resetValues();
 
         serviceButton = (Button) findViewById(R.id.service_button);
+        serviceButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startService();
+            }
+        });
 
         restartServiceButton = (Button) findViewById(R.id.save_button);
         //noinspection ConstantConditions
@@ -136,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         accessKeyEditText.setOnEditorActionListener(changeListener);
         accessKeyEditText.addTextChangedListener(changeWatcher);
 
-        if (isLeServiceRunning()) {
+        if (isServiceRunning()) {
             onServiceRunning();
         }
     }
@@ -172,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
-    private boolean isLeServiceRunning() {
+    private boolean isServiceRunning() {
         final ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
             if (OBD2Service.class.getName().equals(service.service.getClassName())) {
@@ -300,11 +318,43 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     @Override
     protected void onStart() {
         super.onStart();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://com.dataart.obd2/http/host/path")
+        );
+        AppIndex.AppIndexApi.start(client, viewAction);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://com.dataart.obd2/http/host/path")
+        );
+        AppIndex.AppIndexApi.end(client, viewAction);
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.disconnect();
     }
 
     private void alertSdkVersionMismatch(final Runnable runnable) {
