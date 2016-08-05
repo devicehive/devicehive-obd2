@@ -44,6 +44,7 @@ public class OBD2Service extends Service {
     private BroadcastReceiver mReceiver;
     private BluetoothAdapter mBluetoothAdapter;
     private DeviceHive mDeviceHive;
+    private OBD2Reader mObd2Reader;
 
     public OBD2Service() {
         super();
@@ -68,6 +69,31 @@ public class OBD2Service extends Service {
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mDeviceHive = DeviceHive.newInstance(this);
         registerReceiver(getBtStateReceiver(), new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
+        final DevicePreferences prefs = new DevicePreferences();
+        mObd2Reader = new OBD2Reader(prefs.getOBD2Mac()) {
+            @Override
+            protected void statusCallback(Status status) {
+                switch (status) {
+                case STATUS_DISCONNECTED:
+                        notifyNewState(getString(R.string.notification_disconnected));
+                        break;
+                    case STATUS_BLUETOOTH_CONNECTING:
+                        notifyNewState(getString(R.string.notification_bluetooth_connecting));
+                        break;
+                    case STATUS_OBD2_CONNECTING:
+                        notifyNewState(getString(R.string.notification_obd2_connecting));
+                        break;
+                    case STATUS_OBD2_LOOPING_DATA:
+                        notifyNewState(getString(R.string.notification_looping_data));
+                        break;
+                }
+            }
+
+            @Override
+            protected void testCallback(String text) {
+                notifyNewState(text);
+            }
+        };
     }
 
     @Override
@@ -86,11 +112,13 @@ public class OBD2Service extends Service {
         }
         mDeviceHive.startProcessingCommands();
         setNotification();
+        mObd2Reader.start();
         return START_NOT_STICKY;
     }
 
     @Override
     public void onDestroy() {
+        mObd2Reader.stop();
         Timber.d("Service.onDestroy");
         mDeviceHive.removeCommandListener();
         mDeviceHive.stopProcessingCommands();
@@ -146,7 +174,7 @@ public class OBD2Service extends Service {
                 @Override
                 protected void onBluetoothOn() {
 //                    mBluetoothServer.scanStart();
-                    notifyNewState(getString(R.string.notification_bt_on));
+                    notifyNewState(getString(R.string.notification_disconnected));
                 }
             };
         }
@@ -166,7 +194,7 @@ public class OBD2Service extends Service {
         final PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
         mBuilder = new NotificationCompat.Builder(this)
-                .setContentText(getString(R.string.notification_bt_on))
+                .setContentText(getString(R.string.notification_disconnected))
                 .setContentTitle(getString(R.string.device_hive))
                 .setSmallIcon(R.drawable.ic_le_service)
                 .setAutoCancel(false)

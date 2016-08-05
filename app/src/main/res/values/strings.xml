@@ -32,13 +32,17 @@
     <string name="unknown_device">Unknown device</string>
 
     <string name="notification_bt_off">Bluetooth is off. Please turn on Bluetooth</string>
-    <string name="notification_bt_on">OBD2 Service is working…</string>
+    <string name="notification_disconnected">Idle</string>
+    <string name="notification_bluetooth_connecting">Connecting to bluetooth adaptor...</string>
+    <string name="notification_obd2_connecting">Connecting to OBD2 interface...</string>
+    <string name="notification_looping_data">Receiving data...</string>
 
     <string name="status_json_success">success</string>
     <string name="status_json_fail">fail</string>
     <string name="status_json_not_found">not found</string>
     <string name="status_fail">fail</string>
     <string name="status_waiting">waiting for completion</string>
+
 
     <string name="bt_unable_init">Unable to initialize BluetoothManager</string>
     <string name="bt_unable_get_btm">Unable to obtain a BluetoothAdapter</string>
