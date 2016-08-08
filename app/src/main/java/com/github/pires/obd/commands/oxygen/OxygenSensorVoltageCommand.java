@@ -50,7 +50,7 @@ public class OxygenSensorVoltageCommand extends ObdCommand {
                 command += 3;
                 break;
         }
-        return "01 " + Integer.toHexString(command).toUpperCase();
+        return String.format("01 %02X", command);
     }
 
     /**

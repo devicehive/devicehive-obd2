@@ -10,6 +10,9 @@ import com.dataart.android.devicehive.device.future.SimpleCallableFuture;
 import com.dataart.obd2.R;
 import com.dataart.obd2.devicehive.DeviceHive;
 import com.dataart.obd2.devicehive.DevicePreferences;
+import com.github.pires.obd.commands.ObdCommand;
+import com.github.pires.obd.commands.control.TroubleCodesCommand;
+import com.github.pires.obd.commands.protocol.ObdRawCommand;
 import com.google.gson.Gson;
 
 import java.util.HashMap;
@@ -81,14 +84,39 @@ public abstract class OBD2Gateway {
 
             final String name = command.getCommand();
             if (name.equalsIgnoreCase("GetTroubleCodes")) {
-                String codes = mObd2Reader.getTroubleCodes();
-                if (codes != null) {
-                    status = CommandResult.STATUS_COMLETED;
-                    result = new Gson().toJson(codes);
+                TroubleCodesCommand troubleCodesCommand = new TroubleCodesCommand();
+                if (mObd2Reader.runCommand(troubleCodesCommand)) {
+                    String codes = troubleCodesCommand.getFormattedResult();
+                    if (codes != null) {
+                        status = CommandResult.STATUS_COMLETED;
+                        result = new Gson().toJson(codes);
+                    } else {
+                        status = CommandResult.STATUS_FAILED;
+                        result = "Failed to read codes";
+                    }
+                } else {
+                    status = CommandResult.STATUS_FAILED;
+                    result = "Failed to run troubleCodesCommand";
                 }
             } else if (name.equalsIgnoreCase("RunCommand")) {
                 final HashMap<String, Object> params = (HashMap<String, Object>) command.getParameters();
+                final String mode = (params != null) ? (String) params.get("mode") : null;
+                final String pid = (params != null) ? (String) params.get("pid") : null;
+                if (mode == null || pid == null) {
+                    status = CommandResult.STATUS_FAILED;
+                    result = "Please specify mode and pid parameters";
+                } else {
+                    ObdRawCommand obdCommand = new ObdRawCommand(mode + " " + pid);
+                    if (mObd2Reader.runCommand(obdCommand)) {
+                        status = CommandResult.STATUS_COMLETED;
+                        result = obdCommand.getFormattedResult();
+                    } else {
+                        status = CommandResult.STATUS_FAILED;
+                        result = "Failed to run command";
+                    }
+                }
             } else {
+                status = CommandResult.STATUS_FAILED;
                 result = new Gson().toJson(mContext.getString(R.string.unknown_commnad));
             }
             return new SimpleCallableFuture<>(new CommandResult(status, result));

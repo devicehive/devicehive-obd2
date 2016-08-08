@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.util.Log;
 
+import com.github.pires.obd.commands.ObdCommand;
 import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.engine.RPMCommand;
 import com.github.pires.obd.commands.protocol.EchoOffCommand;
@@ -39,7 +40,6 @@ public abstract class OBD2Reader implements Runnable{
     private EchoOffCommand mEchoOffCommand = new EchoOffCommand();
     private LineFeedOffCommand mLineFeedOffCommand = new LineFeedOffCommand();
     private SelectProtocolCommand mSelectProtocolCommand = new SelectProtocolCommand(ObdProtocols.AUTO);
-    private TroubleCodesCommand mTroubleCodesCommand = new TroubleCodesCommand();
 
     final Handler mHandler = new Handler();
 
@@ -148,19 +148,20 @@ public abstract class OBD2Reader implements Runnable{
         nextIteration(iteration());
     }
 
-    public synchronized String getTroubleCodes() {
+    public synchronized boolean runCommand(ObdCommand command) {
         if (!ensureConnected()) {
-            return null;
+            return false;
         }
         try {
-            mTroubleCodesCommand.run(mInputStream, mOutputStream);
+            command.run(mInputStream, mOutputStream);
         } catch (Exception e) {
             e.printStackTrace();
             closeSocket();
-            return null;
+            return false;
         }
-        return mTroubleCodesCommand.getFormattedResult();
+        return true;
     }
+
 
     protected abstract void statusCallback(Status status);
     protected abstract void dataCallback(OBD2Data data);
