@@ -81,7 +81,11 @@ public abstract class OBD2Gateway {
 
             final String name = command.getCommand();
             if (name.equalsIgnoreCase("GetTroubleCodes")) {
-
+                String codes = mObd2Reader.getTroubleCodes();
+                if (codes != null) {
+                    status = CommandResult.STATUS_COMLETED;
+                    result = new Gson().toJson(codes);
+                }
             } else if (name.equalsIgnoreCase("RunCommand")) {
                 final HashMap<String, Object> params = (HashMap<String, Object>) command.getParameters();
             } else {

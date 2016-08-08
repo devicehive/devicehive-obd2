@@ -6,13 +6,13 @@ import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.util.Log;
 
+import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.engine.RPMCommand;
 import com.github.pires.obd.commands.protocol.EchoOffCommand;
 import com.github.pires.obd.commands.protocol.LineFeedOffCommand;
 import com.github.pires.obd.commands.protocol.ObdResetCommand;
 import com.github.pires.obd.commands.protocol.SelectProtocolCommand;
 import com.github.pires.obd.enums.ObdProtocols;
-import com.google.common.util.concurrent.Runnables;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +39,7 @@ public abstract class OBD2Reader implements Runnable{
     private EchoOffCommand mEchoOffCommand = new EchoOffCommand();
     private LineFeedOffCommand mLineFeedOffCommand = new LineFeedOffCommand();
     private SelectProtocolCommand mSelectProtocolCommand = new SelectProtocolCommand(ObdProtocols.AUTO);
-    private RPMCommand mRPMCommand = new RPMCommand();
+    private TroubleCodesCommand mTroubleCodesCommand = new TroubleCodesCommand();
 
     final Handler mHandler = new Handler();
 
@@ -69,7 +69,7 @@ public abstract class OBD2Reader implements Runnable{
         mHandler.removeCallbacks(this);
     }
 
-    private synchronized void nextItteration(boolean success) {
+    private synchronized void nextIteration(boolean success) {
         if (!isStarted) {
             return;
         }
@@ -88,7 +88,7 @@ public abstract class OBD2Reader implements Runnable{
         }
     }
 
-    private boolean intteration() {
+    private boolean ensureConnected() {
         if (mSocket == null) {
             statusCallback(Status.STATUS_BLUETOOTH_CONNECTING);
             try {
@@ -125,6 +125,13 @@ public abstract class OBD2Reader implements Runnable{
             mObd2Init = true;
             statusCallback(Status.STATUS_OBD2_LOOPING_DATA);
         }
+        return true;
+    }
+
+    private boolean iteration() {
+        if (!ensureConnected()) {
+            return false;
+        }
 
         try {
             dataCallback(OBD2Data.readCurrentData(mInputStream, mOutputStream));
@@ -138,7 +145,21 @@ public abstract class OBD2Reader implements Runnable{
 
     @Override
     public void run() {
-        nextItteration(intteration());
+        nextIteration(iteration());
+    }
+
+    public synchronized String getTroubleCodes() {
+        if (!ensureConnected()) {
+            return null;
+        }
+        try {
+            mTroubleCodesCommand.run(mInputStream, mOutputStream);
+        } catch (Exception e) {
+            e.printStackTrace();
+            closeSocket();
+            return null;
+        }
+        return mTroubleCodesCommand.getFormattedResult();
     }
 
     protected abstract void statusCallback(Status status);
