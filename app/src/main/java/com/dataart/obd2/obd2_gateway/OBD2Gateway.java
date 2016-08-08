@@ -10,10 +10,10 @@ import com.dataart.android.devicehive.device.future.SimpleCallableFuture;
 import com.dataart.obd2.R;
 import com.dataart.obd2.devicehive.DeviceHive;
 import com.dataart.obd2.devicehive.DevicePreferences;
-import com.github.pires.obd.commands.ObdCommand;
 import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.protocol.ObdRawCommand;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.util.HashMap;
 
@@ -88,8 +88,9 @@ public abstract class OBD2Gateway {
                 if (mObd2Reader.runCommand(troubleCodesCommand)) {
                     String codes = troubleCodesCommand.getFormattedResult();
                     if (codes != null) {
-                        status = CommandResult.STATUS_COMLETED;
-                        result = new Gson().toJson(codes);
+                        final String codeArray[] = codes.split("\n");
+                        return new SimpleCallableFuture<>(new CommandResult(
+                                CommandResult.STATUS_COMLETED, new Gson().toJson(codeArray)));
                     } else {
                         status = CommandResult.STATUS_FAILED;
                         result = "Failed to read codes";
