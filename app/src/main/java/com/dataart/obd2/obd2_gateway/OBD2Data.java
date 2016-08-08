@@ -81,6 +81,7 @@ public class OBD2Data {
         try {
             command.run(obd2input, obd2ouput);
         } catch (ResponseException e) {
+            // Some commands are not supported by ECU, to avoid asking unsupported command mark them
             ignoreCommands.add(command);
             return false;
         }
