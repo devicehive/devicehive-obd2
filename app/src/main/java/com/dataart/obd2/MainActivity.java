@@ -202,6 +202,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     @Override
     protected void onResume() {
         super.onResume();
+        updateBondedDevices();
     }
 
     @Override
@@ -268,6 +269,24 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         }
     }
 
+    private void updateBondedDevices() {
+        String obd2mac = prefs.getOBD2Mac();
+        ArrayAdapter listAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_dropdown_item);
+        btDevicesSpinner.setAdapter(listAdapter);
+
+        Set<BluetoothDevice> devices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
+        if (devices.size() > 0) {
+            for (BluetoothDevice device : devices) {
+                listAdapter.add(device.getName() + "  " + device.getAddress());
+                if (device.getAddress().equals(obd2mac)) {
+                    btDevicesSpinner.setSelection(listAdapter.getCount() - 1);
+                }
+            }
+        }
+        listAdapter.notifyDataSetChanged();
+    }
+
     private void resetValues() {
         String serverUrl = prefs.getServerUrl();
         serverUrlEditText.setText(
@@ -290,21 +309,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
                         : accessKey
         );
 
-        String obd2mac = prefs.getOBD2Mac();
-        ArrayAdapter listAdapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_spinner_dropdown_item);
-        btDevicesSpinner.setAdapter(listAdapter);
-
-        Set<BluetoothDevice> devices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
-        if (devices.size() > 0) {
-            for (BluetoothDevice device : devices) {
-                listAdapter.add(device.getName() + "  " + device.getAddress());
-                if (device.getAddress().equals(obd2mac)) {
-                    btDevicesSpinner.setSelection(listAdapter.getCount() - 1);
-                }
-            }
-        }
-        listAdapter.notifyDataSetChanged();
+        updateBondedDevices();
     }
 
     private void resetErrors() {
