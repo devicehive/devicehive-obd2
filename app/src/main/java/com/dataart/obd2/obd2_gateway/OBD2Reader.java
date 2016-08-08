@@ -97,7 +97,9 @@ public abstract class OBD2Reader implements Runnable{
                 mInputStream = mSocket.getInputStream();
                 mOutputStream = mSocket.getOutputStream();
             } catch (Exception e) {
-                e.printStackTrace();
+                if (!(e instanceof IOException)){
+                    e.printStackTrace();
+                }
                 closeSocket();
                 return false;
             }
