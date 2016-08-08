@@ -117,9 +117,9 @@ public abstract class OBD2Gateway {
                 }
             } else {
                 status = CommandResult.STATUS_FAILED;
-                result = new Gson().toJson(mContext.getString(R.string.unknown_commnad));
+                result = mContext.getString(R.string.unknown_commnad);
             }
-            return new SimpleCallableFuture<>(new CommandResult(status, result));
+            return new SimpleCallableFuture<>(new CommandResult(status, new Gson().toJson(result)));
         }
     };
 
