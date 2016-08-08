@@ -21,6 +21,7 @@ import com.github.pires.obd.exceptions.ResponseException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashSet;
 
 /**
  * Created by Nikolay Khabarov on 8/6/16.
@@ -68,16 +69,26 @@ public class OBD2Data {
     private static AirFuelRatioCommand mAirFuelRatioCommand = new AirFuelRatioCommand();
     private static ModuleVoltageCommand mModuleVoltageCommand = new ModuleVoltageCommand();
 
+    private static HashSet<ObdCommand> ignoreCommands = new HashSet<ObdCommand>();
+
     protected OBD2Data() {
     }
 
     private static boolean run(ObdCommand command, InputStream obd2input, OutputStream obd2ouput) throws IOException, InterruptedException {
+        if (ignoreCommands.contains(command)) {
+            return false;
+        }
         try {
             command.run(obd2input, obd2ouput);
         } catch (ResponseException e) {
+            ignoreCommands.add(command);
             return false;
         }
         return true;
+    }
+
+    public static void cleanIgnoredCommands() {
+        ignoreCommands.clear();
     }
 
     public static OBD2Data readCurrentData(InputStream obd2input, OutputStream obd2ouput) throws IOException, InterruptedException {
