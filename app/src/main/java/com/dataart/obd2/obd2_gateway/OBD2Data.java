@@ -16,6 +16,7 @@ import com.github.pires.obd.commands.pressure.IntakeManifoldPressureCommand;
 import com.github.pires.obd.commands.temperature.AirIntakeTemperatureCommand;
 import com.github.pires.obd.commands.temperature.EngineCoolantTemperatureCommand;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -24,22 +25,22 @@ import java.io.OutputStream;
  */
 
 public class OBD2Data {
-    private int mRPM;  //RPM
-    private float mEngineCoolantTemperature; // C
-    private float mLoad; // percentage
-    private float mAirIntakeTemperature; // C
-    private int mIntakeManifoldPressure; // kPa
-    private double mMassAirFlow; // grams/sec
-    private float mThrottlePosition; // percentage
-    private int mSpeed; // km/h
-    private float mTimingAdvance; // degree, relative to 1st cylinder (top dead centre)
-    private float mOxygenSensorVoltageBank1Sensor1; // Volts
-    private float mOxygenSensorVoltageBank1Sensor2; // Volts
-    private float mFuelLevel; // percentage
-    private int mFuelPressure; // kPa
-    private float mConsumptionRate; // L/h
-    private double mAirFuelRation; // ratio
-    private double mModuleVoltage; // Volts
+    private int RPM;  //RPM
+    private float EngineCoolantTemperature; // C
+    private float Load; // percentage
+    private float AirIntakeTemperature; // C
+    private int IntakeManifoldPressure; // kPa
+    private double MassAirFlow; // grams/sec
+    private float ThrottlePosition; // percentage
+    private int Speed; // km/h
+    private float TimingAdvance; // degree, relative to 1st cylinder (top dead centre)
+    private float OxygenSensorVoltageBank1Sensor1; // Volts
+    private float OxygenSensorVoltageBank1Sensor2; // Volts
+    private float FuelLevel; // percentage
+    private int FuelPressure; // kPa
+    private float ConsumptionRate; // L/h
+    private double AirFuelRation; // ratio
+    private double ModuleVoltage; // Volts
 
     private static RPMCommand mRPMCommand = new RPMCommand();
     private static EngineCoolantTemperatureCommand mEngineCoolantTemperatureCommand =
@@ -69,109 +70,104 @@ public class OBD2Data {
     protected OBD2Data() {
     }
 
-    public static OBD2Data readCurrentData(InputStream obd2input, OutputStream obd2ouput) {
+    public static OBD2Data readCurrentData(InputStream obd2input, OutputStream obd2ouput) throws IOException, InterruptedException {
         OBD2Data data = new OBD2Data();
-        try {
-            mRPMCommand.run(obd2input,  obd2ouput);
-            data.mRPM = mRPMCommand.getRPM();
-            mEngineCoolantTemperatureCommand.run(obd2input,  obd2ouput);
-            data.mEngineCoolantTemperature = mEngineCoolantTemperatureCommand.getTemperature();
-            mLoadCommand.run(obd2input,  obd2ouput);
-            data.mLoad = mLoadCommand.getPercentage();
-            mAirIntakeTemperatureCommand.run(obd2input,  obd2ouput);
-            data.mAirIntakeTemperature = mAirIntakeTemperatureCommand.getTemperature();
-            mIntakeManifoldPressureCommand.run(obd2input,  obd2ouput);
-            data.mIntakeManifoldPressure = mIntakeManifoldPressureCommand.getMetricUnit();
-            mMassAirFlowCommand.run(obd2input,  obd2ouput);
-            data.mMassAirFlow = mMassAirFlowCommand.getMAF();
-            mThrottlePositionCommand.run(obd2input,  obd2ouput);
-            data.mThrottlePosition = mThrottlePositionCommand.getPercentage();
-            mSpeedCommand.run(obd2input,  obd2ouput);
-            data.mSpeed = mSpeedCommand.getMetricSpeed();
-            mTimingAdvanceCommand.run(obd2input,  obd2ouput);
-            data.mTimingAdvance = mTimingAdvanceCommand.getPercentage();
-            mOxygenSensorVoltageCommandBank1Sensor1.run(obd2input,  obd2ouput);
-            data.mOxygenSensorVoltageBank1Sensor1 = mOxygenSensorVoltageCommandBank1Sensor1.getVoltage();
-            mOxygenSensorVoltageCommandBank1Sensor2.run(obd2input,  obd2ouput);
-            data.mOxygenSensorVoltageBank1Sensor2 = mOxygenSensorVoltageCommandBank1Sensor2.getVoltage();
-            mFuelLevelCommand.run(obd2input,  obd2ouput);
-            data.mFuelLevel = mFuelLevelCommand.getFuelLevel();
-            mFuelPressureCommand.run(obd2input,  obd2ouput);
-            data.mFuelPressure = mFuelPressureCommand.getMetricUnit();
-            mConsumptionRateCommand.run(obd2input,  obd2ouput);
-            data.mConsumptionRate = mConsumptionRateCommand.getLitersPerHour();
-            mAirFuelRatioCommand.run(obd2input,  obd2ouput);
-            data.mAirFuelRation = mAirFuelRatioCommand.getAirFuelRatio();
-            mModuleVoltageCommand.run(obd2input,  obd2ouput);
-            data.mModuleVoltage = mModuleVoltageCommand.getVoltage();
-        } catch (Exception e) {
-            e.printStackTrace();
-            data = null;
-        }
+        mRPMCommand.run(obd2input,  obd2ouput);
+        data.RPM = mRPMCommand.getRPM();
+        mEngineCoolantTemperatureCommand.run(obd2input,  obd2ouput);
+        data.EngineCoolantTemperature = mEngineCoolantTemperatureCommand.getTemperature();
+        mLoadCommand.run(obd2input,  obd2ouput);
+        data.Load = mLoadCommand.getPercentage();
+        mAirIntakeTemperatureCommand.run(obd2input,  obd2ouput);
+        data.AirIntakeTemperature = mAirIntakeTemperatureCommand.getTemperature();
+        mIntakeManifoldPressureCommand.run(obd2input,  obd2ouput);
+        data.IntakeManifoldPressure = mIntakeManifoldPressureCommand.getMetricUnit();
+        mMassAirFlowCommand.run(obd2input,  obd2ouput);
+        data.MassAirFlow = mMassAirFlowCommand.getMAF();
+        mThrottlePositionCommand.run(obd2input,  obd2ouput);
+        data.ThrottlePosition = mThrottlePositionCommand.getPercentage();
+        mSpeedCommand.run(obd2input,  obd2ouput);
+        data.Speed = mSpeedCommand.getMetricSpeed();
+        mTimingAdvanceCommand.run(obd2input,  obd2ouput);
+        data.TimingAdvance = mTimingAdvanceCommand.getPercentage();
+        mOxygenSensorVoltageCommandBank1Sensor1.run(obd2input,  obd2ouput);
+        data.OxygenSensorVoltageBank1Sensor1 = mOxygenSensorVoltageCommandBank1Sensor1.getVoltage();
+        mOxygenSensorVoltageCommandBank1Sensor2.run(obd2input,  obd2ouput);
+        data.OxygenSensorVoltageBank1Sensor2 = mOxygenSensorVoltageCommandBank1Sensor2.getVoltage();
+        mFuelLevelCommand.run(obd2input,  obd2ouput);
+        data.FuelLevel = mFuelLevelCommand.getFuelLevel();
+        mFuelPressureCommand.run(obd2input,  obd2ouput);
+        data.FuelPressure = mFuelPressureCommand.getMetricUnit();
+        mConsumptionRateCommand.run(obd2input,  obd2ouput);
+        data.ConsumptionRate = mConsumptionRateCommand.getLitersPerHour();
+        mAirFuelRatioCommand.run(obd2input,  obd2ouput);
+        data.AirFuelRation = mAirFuelRatioCommand.getAirFuelRatio();
+        mModuleVoltageCommand.run(obd2input,  obd2ouput);
+        data.ModuleVoltage = mModuleVoltageCommand.getVoltage();
         return data;
     }
 
     public int getRPM() {
-        return mRPM;
+        return RPM;
     }
 
     public float getEngineCoolantTemperature() {
-        return mEngineCoolantTemperature;
+        return EngineCoolantTemperature;
     }
 
     public float getLoad() {
-        return mLoad;
+        return Load;
     }
 
     public float getAirIntakeTemperature() {
-        return mAirIntakeTemperature;
+        return AirIntakeTemperature;
     }
 
     public int getIntakeManifoldPressure() {
-        return mIntakeManifoldPressure;
+        return IntakeManifoldPressure;
     }
 
     public double getMassAirFlow() {
-        return mMassAirFlow;
+        return MassAirFlow;
     }
 
     public float getThrottlePosition() {
-        return mThrottlePosition;
+        return ThrottlePosition;
     }
 
     public int getSpeed() {
-        return mSpeed;
+        return Speed;
     }
 
     public float getTimingAdvance() {
-        return mTimingAdvance;
+        return TimingAdvance;
     }
 
     public float getOxygenSensorVoltageBank1Sensor1() {
-        return mOxygenSensorVoltageBank1Sensor1;
+        return OxygenSensorVoltageBank1Sensor1;
     }
 
     public float getOxygenSensorVoltageBank1Sensor2() {
-        return mOxygenSensorVoltageBank1Sensor2;
+        return OxygenSensorVoltageBank1Sensor2;
     }
 
     public float getFuelLevel() {
-        return mFuelLevel;
+        return FuelLevel;
     }
 
     public int getFuelPressure() {
-        return mFuelPressure;
+        return FuelPressure;
     }
 
     public float getConsumptionRate() {
-        return mConsumptionRate;
+        return ConsumptionRate;
     }
 
     public double getAirFuelRation() {
-        return mAirFuelRation;
+        return AirFuelRation;
     }
 
     public double getModuleVoltage() {
-        return mModuleVoltage;
+        return ModuleVoltage;
     }
 }

@@ -125,9 +125,7 @@ public abstract class OBD2Reader implements Runnable{
         }
 
         try {
-            mRPMCommand.run(mInputStream,  mOutputStream);
-            Log.i("tag", "RPMCommand " + mRPMCommand.getResult());
-            testCallback("RPM: " + String.valueOf(mRPMCommand.getRPM()));
+            dataCallback(OBD2Data.readCurrentData(mInputStream, mOutputStream));
         } catch (Exception e) {
             e.printStackTrace();
             closeSocket();
@@ -142,5 +140,5 @@ public abstract class OBD2Reader implements Runnable{
     }
 
     protected abstract void statusCallback(Status status);
-    protected abstract void testCallback(String text);
+    protected abstract void dataCallback(OBD2Data data);
 }

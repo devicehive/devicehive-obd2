@@ -16,6 +16,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.dataart.android.devicehive.Command;
+import com.dataart.android.devicehive.Notification;
 import com.dataart.android.devicehive.device.CommandResult;
 import com.dataart.android.devicehive.network.DeviceHiveApiService;
 import com.dataart.obd2.MainActivity;
@@ -90,8 +91,8 @@ public class OBD2Service extends Service {
             }
 
             @Override
-            protected void testCallback(String text) {
-                notifyNewState(text);
+            protected void dataCallback(OBD2Data data) {
+                mDeviceHive.sendNotification(new Notification("obd2", new Gson().toJson(data)));
             }
         };
     }
