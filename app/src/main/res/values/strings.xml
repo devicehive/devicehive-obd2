@@ -49,4 +49,5 @@
     <string name="sdk_version_warning_title">Unsupported SDK version</string>
     <string name="sdk_version_warning">This application supports SDK starting with 18 (Android Jelly Bean MR2).\nPlease, update your Android version or try on another device</string>
     <string name="unsupported">Unsupported device</string>
+    <string name="unknown_commnad">Unknown command</string>
 </resources>

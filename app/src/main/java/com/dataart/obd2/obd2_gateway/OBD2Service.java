@@ -15,16 +15,9 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.dataart.android.devicehive.Command;
-import com.dataart.android.devicehive.Notification;
-import com.dataart.android.devicehive.device.CommandResult;
 import com.dataart.android.devicehive.network.DeviceHiveApiService;
 import com.dataart.obd2.MainActivity;
 import com.dataart.obd2.R;
-import com.dataart.android.devicehive.device.future.SimpleCallableFuture;
-import com.dataart.obd2.devicehive.DeviceHive;
-import com.dataart.obd2.devicehive.DevicePreferences;
-import com.google.gson.Gson;
 
 import timber.log.Timber;
 
@@ -44,8 +37,7 @@ public class OBD2Service extends Service {
     private NotificationCompat.Builder mBuilder;
     private BroadcastReceiver mReceiver;
     private BluetoothAdapter mBluetoothAdapter;
-    private DeviceHive mDeviceHive;
-    private OBD2Reader mObd2Reader;
+    private OBD2Gateway mObd2Gateway;
 
     public OBD2Service() {
         super();
@@ -68,31 +60,11 @@ public class OBD2Service extends Service {
             send(ACTION_BT_PERMISSION_REQUEST);
         }
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mDeviceHive = DeviceHive.newInstance(this);
         registerReceiver(getBtStateReceiver(), new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-        final DevicePreferences prefs = new DevicePreferences();
-        mObd2Reader = new OBD2Reader(prefs.getOBD2Mac()) {
+        mObd2Gateway = new OBD2Gateway(this) {
             @Override
-            protected void statusCallback(Status status) {
-                switch (status) {
-                case STATUS_DISCONNECTED:
-                        notifyNewState(getString(R.string.notification_disconnected));
-                        break;
-                    case STATUS_BLUETOOTH_CONNECTING:
-                        notifyNewState(getString(R.string.notification_bluetooth_connecting));
-                        break;
-                    case STATUS_OBD2_CONNECTING:
-                        notifyNewState(getString(R.string.notification_obd2_connecting));
-                        break;
-                    case STATUS_OBD2_LOOPING_DATA:
-                        notifyNewState(getString(R.string.notification_looping_data));
-                        break;
-                }
-            }
-
-            @Override
-            protected void dataCallback(OBD2Data data) {
-                mDeviceHive.sendNotification(new Notification("obd2", new Gson().toJson(data)));
+            public void updateState(String text) {
+                notifyNewState(text);
             }
         };
     }
@@ -104,25 +76,15 @@ public class OBD2Service extends Service {
 //            mBluetoothServer.scanStart();
 //        }
 
-        final DevicePreferences prefs = new DevicePreferences();
-        mDeviceHive.setApiEnpointUrl(prefs.getServerUrl());
-
-        mDeviceHive.setCommandListener(commandListener);
-        if (!mDeviceHive.isRegistered()) {
-            mDeviceHive.registerDevice();
-        }
-        mDeviceHive.startProcessingCommands();
         setNotification();
-        mObd2Reader.start();
+        mObd2Gateway.start();
         return START_NOT_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        mObd2Reader.stop();
         Timber.d("Service.onDestroy");
-        mDeviceHive.removeCommandListener();
-        mDeviceHive.stopProcessingCommands();
+        mObd2Gateway.stop();
         stopService(new Intent(this, DeviceHiveApiService.class));
         if (mReceiver != null) {
             unregisterReceiver(mReceiver);
@@ -131,18 +93,6 @@ public class OBD2Service extends Service {
         super.onDestroy();
         Log.d(TAG, "OBD2Service was destroyed");
     }
-
-    private final DeviceHive.CommandListener commandListener = new DeviceHive.CommandListener() {
-        @Override
-        public SimpleCallableFuture<CommandResult> onDeviceReceivedCommand(Command command) {
-            Log.d(TAG, "Device received Command in OBD2Service");
-            // TODO recv commands from cloud
-            //return mGateway.doCommand(getApplicationContext(), mDeviceHive, command);
-            return new SimpleCallableFuture<>(
-                    new CommandResult(CommandResult.STATUS_COMLETED, new Gson().toJson(getString(android.R.string.ok)))
-            );
-        }
-    };
 
     @Override
     public IBinder onBind(Intent intent) {
