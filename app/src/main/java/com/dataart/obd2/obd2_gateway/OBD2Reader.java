@@ -96,7 +96,7 @@ public abstract class OBD2Reader implements Runnable{
                 mSocket.connect();
                 mInputStream = mSocket.getInputStream();
                 mOutputStream = mSocket.getOutputStream();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 if (!(e instanceof IOException)){
                     e.printStackTrace();
                 }
@@ -117,10 +117,12 @@ public abstract class OBD2Reader implements Runnable{
                 Log.i("tag", "LineFeedOffCommand " + mLineFeedOffCommand.getResult());
                 mSelectProtocolCommand.run(mInputStream,  mOutputStream);
                 Log.i("tag", "SelectProtocolCommand " + mSelectProtocolCommand.getResult());
-            } catch (Exception e) {
+            } catch (IOException e) {
                 e.printStackTrace();
                 closeSocket();
                 return false;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
             mObd2Init = true;
             statusCallback(Status.STATUS_OBD2_LOOPING_DATA);
@@ -135,10 +137,12 @@ public abstract class OBD2Reader implements Runnable{
 
         try {
             dataCallback(OBD2Data.readCurrentData(mInputStream, mOutputStream));
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
             closeSocket();
             return false;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return true;
     }
