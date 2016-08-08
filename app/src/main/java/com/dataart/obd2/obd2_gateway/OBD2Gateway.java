@@ -12,6 +12,7 @@ import com.dataart.obd2.devicehive.DeviceHive;
 import com.dataart.obd2.devicehive.DevicePreferences;
 import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.protocol.ObdRawCommand;
+import com.github.pires.obd.exceptions.ResponseException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -108,7 +109,13 @@ public abstract class OBD2Gateway {
                     result = "Please specify mode and pid parameters";
                 } else {
                     ObdRawCommand obdCommand = new ObdRawCommand(mode + " " + pid);
-                    if (mObd2Reader.runCommand(obdCommand)) {
+                    boolean commandRes = true;
+                    try  {
+                        commandRes = mObd2Reader.runCommand(obdCommand);
+                    } catch (ResponseException e) {
+                        // ignore response error and send it as is
+                    }
+                    if (commandRes) {
                         status = CommandResult.STATUS_COMLETED;
                         result = obdCommand.getFormattedResult();
                     } else {

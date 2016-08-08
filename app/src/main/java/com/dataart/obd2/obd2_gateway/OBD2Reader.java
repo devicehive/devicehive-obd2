@@ -144,6 +144,7 @@ public abstract class OBD2Reader implements Runnable{
             return false;
         } catch (InterruptedException e) {
             e.printStackTrace();
+            return false;
         }
         return true;
     }
@@ -159,9 +160,12 @@ public abstract class OBD2Reader implements Runnable{
         }
         try {
             command.run(mInputStream, mOutputStream);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
             closeSocket();
+            return false;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
             return false;
         }
         return true;

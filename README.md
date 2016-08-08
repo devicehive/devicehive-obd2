@@ -9,7 +9,7 @@ DeviceHive OBD2 Gateway collect vehicle's self-diagnostic information and send i
 ------------------
 There are few commands which can be executed from DeviceHive server:
 - `GetTroubleCodes` - read OBD2 trouble codes and return them in the command result. No parameters require.
-- `RunCommand` - run arbitrary OBD2 command and get the result. `mode` and `pid` parameters should be specified in command parameters in hex. Example `{"mode":"01","pid":"01"}`
+- `RunCommand` - run arbitrary OBD2 command and get the result. `mode` and `pid` parameters should be specified in command parameters in a single byte hex string with leading zero. Example `{"mode":"01","pid":"0C"}` ('Engine RPM' PID).
 
 **Legacy**
 ------------------
