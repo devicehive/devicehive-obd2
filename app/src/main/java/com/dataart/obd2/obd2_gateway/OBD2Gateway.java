@@ -1,7 +1,6 @@
 package com.dataart.obd2.obd2_gateway;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.dataart.android.devicehive.Command;
 import com.dataart.android.devicehive.Notification;
@@ -14,7 +13,6 @@ import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.protocol.ObdRawCommand;
 import com.github.pires.obd.exceptions.ResponseException;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
 import java.util.HashMap;
 

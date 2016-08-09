@@ -58,8 +58,8 @@ public abstract class OBD2Reader implements Runnable{
 
     public synchronized void start() {
         if (isStarted == false) {
-            mHandler.postDelayed(this, READ_INTERVAL);
             isStarted = true;
+            mHandler.postDelayed(this, READ_INTERVAL);
             statusCallback(Status.STATUS_OBD2_CONNECTING);
         }
     }

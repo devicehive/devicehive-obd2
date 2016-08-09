@@ -44,6 +44,7 @@ public class OBD2Data {
     private Float ConsumptionRate; // L/h
     private Double AirFuelRation; // ratio
     private Double ModuleVoltage; // Volts
+    private long timestamp; // Unix time
 
     private static RPMCommand mRPMCommand = new RPMCommand();
     private static EngineCoolantTemperatureCommand mEngineCoolantTemperatureCommand =
@@ -94,6 +95,7 @@ public class OBD2Data {
 
     public static OBD2Data readCurrentData(InputStream obd2input, OutputStream obd2ouput) throws IOException, InterruptedException {
         OBD2Data data = new OBD2Data();
+        data.timestamp = System.currentTimeMillis() / 1000L;
         data.RPM = run(mRPMCommand, obd2input,  obd2ouput) ? mRPMCommand.getRPM() : null;
         data.EngineCoolantTemperature = run(mEngineCoolantTemperatureCommand, obd2input,  obd2ouput) ?
                 mEngineCoolantTemperatureCommand.getTemperature() : null;
