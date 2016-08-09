@@ -9,8 +9,8 @@ android {
         applicationId "com.dataart.obd2"
         minSdkVersion 18
         targetSdkVersion 24
-        versionCode 2
-        versionName "2.0"
+        versionCode 1
+        versionName "0.1"
 
         multiDexEnabled true
     }
