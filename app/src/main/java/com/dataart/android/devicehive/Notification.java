@@ -71,7 +71,7 @@ public class Notification implements Parcelable {
 	@Override
 	public void writeToParcel(Parcel dest, int flags) {
 		dest.writeString(name);
-		dest.writeSerializable(timestamp);
+		dest.writeString(timestamp);
 		dest.writeSerializable(parameters != null ? parameters.getObject()
 				: parameters);
 	}
