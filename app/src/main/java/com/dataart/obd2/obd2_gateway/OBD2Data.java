@@ -21,13 +21,14 @@ import com.github.pires.obd.exceptions.ResponseException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashSet;
+import java.util.Hashtable;
 
 /**
  * Created by Nikolay Khabarov on 8/6/16.
  */
 
 public class OBD2Data {
+    private static final Integer READ_RETRIES_MAX_NUMBER = 5;
     private Integer RPM;  //RPM
     private Float EngineCoolantTemperature; // C
     private Float Load; // percentage
@@ -70,20 +71,23 @@ public class OBD2Data {
     private static AirFuelRatioCommand mAirFuelRatioCommand = new AirFuelRatioCommand();
     private static ModuleVoltageCommand mModuleVoltageCommand = new ModuleVoltageCommand();
 
-    private static HashSet<ObdCommand> ignoreCommands = new HashSet<ObdCommand>();
+    private static Hashtable<ObdCommand, Integer> ignoreCommands = new Hashtable<ObdCommand, Integer>();
 
     protected OBD2Data() {
     }
 
     private static boolean run(ObdCommand command, InputStream obd2input, OutputStream obd2ouput) throws IOException, InterruptedException {
-        if (ignoreCommands.contains(command)) {
+        Integer failedCounter = ignoreCommands.get(command);
+        if (failedCounter != null && failedCounter >= READ_RETRIES_MAX_NUMBER) {
             return false;
         }
         try {
             command.run(obd2input, obd2ouput);
+            ignoreCommands.remove(command);
         } catch (ResponseException e) {
             // Some commands are not supported by ECU, to avoid asking unsupported command mark them
-            ignoreCommands.add(command);
+            final Integer value = ignoreCommands.get(command);
+            ignoreCommands.put(command, (value == null) ? 1 : (value + 1));
             return false;
         }
         return true;
