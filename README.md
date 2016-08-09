@@ -1,7 +1,7 @@
 **DeviceHive OBD2 Gateway for OBD2 compatible cars**
 --------------------------------
 
-DeviceHive OBD2 Gateway collect vehicle's self-diagnostic information and send it cloud. This gateway works with Anroid devices and Bluetooth ELM327 adaptors.
+DeviceHive OBD2 Gateway collect vehicle's self-diagnostic information and send it cloud. This gateway works with Anroid devices and Bluetooth ELM327 adaptors. Video demo - https://www.youtube.com/watch?v=JnoyO4KPGJA
 
 ![](obd2-architecture.png?raw=true)
 
@@ -21,6 +21,10 @@ There are few commands which can be executed from DeviceHive server:
 **Freeboard example**
 ------------------
 `Freeboard-RPM-Throttle-example.json` is a config for basic example with Freeboard ( https://github.com/devicehive/freeboard ). Freeboard is also aviliable at DeviceHive playgrounds. Usage: open file in Freeboard, click on datasource and insert you AccessKey, observer your engine RPM and Throttle on graphs.
+
+**Local storage**
+------------------
+Not implemented yet
 
 **Legacy**
 ------------------
