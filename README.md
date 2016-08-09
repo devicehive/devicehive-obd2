@@ -18,6 +18,10 @@ There are few commands which can be executed from DeviceHive server:
 - `GetTroubleCodes` - read OBD2 trouble codes and return them in the command result. No parameters require.
 - `RunCommand` - run arbitrary OBD2 command and get the result. `mode` and `pid` parameters should be specified in command parameters in a single byte hex string with leading zero. Example `{"mode":"01","pid":"0C"}` ('Engine RPM' PID).
 
+**Freeboard example**
+------------------
+`Freeboard-RPM-Throttle-example.json` is a config for basic example with Freeboard ( https://github.com/devicehive/freeboard ). Freeboard is also aviliable at DeviceHive playgrounds. Usage: open file in Freeboard, click on datasource and insert you AccessKey, observer your engine RPM and Throttle on graphs.
+
 **Legacy**
 ------------------
 This project is based on:
