@@ -5,6 +5,13 @@ DeviceHive OBD2 Gateway collect vehicle's self-diagnostic information and send i
 
 ![](obd2-architecture.png?raw=true)
 
+**Usaga**
+------------------
+- Pair your ELM327 adaptor with you devices using system Bluetooth settings
+- Install and run this app
+- Enter DeviceHive server credentials and choose your ELM327 from list of paired devices
+- Click on `Start service` and app will log OBD2 data to cloud
+
 **Commands**
 ------------------
 There are few commands which can be executed from DeviceHive server:
