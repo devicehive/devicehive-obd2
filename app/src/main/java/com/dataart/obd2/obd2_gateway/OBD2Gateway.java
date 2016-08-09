@@ -14,7 +14,11 @@ import com.github.pires.obd.commands.protocol.ObdRawCommand;
 import com.github.pires.obd.exceptions.ResponseException;
 import com.google.gson.Gson;
 
+import java.io.IOError;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Created by Nikolay Khabarov on 8/8/16.
@@ -51,7 +55,25 @@ public abstract class OBD2Gateway {
 
             @Override
             protected void dataCallback(OBD2Data data) {
-                mDeviceHive.sendNotification(new Notification("obd2", new Gson().toJson(data)));
+                Method[] methods = OBD2Data.class.getDeclaredMethods();
+                HashMap<String, Object> map = new HashMap<String, Object>();
+                for (Method method : methods) {
+                    String name = method.getName();
+                    if (name.startsWith("get")) {
+                        Object obj = null;
+                        try {
+                            obj = method.invoke(data);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
+                        if (obj != null) {
+                            map.put(name.substring(3), obj);
+                        }
+                    }
+                }
+                mDeviceHive.sendNotification(new Notification("obd2", map));
             }
         };
     }
