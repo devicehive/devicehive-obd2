@@ -2,7 +2,6 @@ package com.dataart.obd2.obd2_gateway;
 
 import android.content.Context;
 
-import com.dataart.android.devicehive.device.CommandResult;
 import com.dataart.obd2.R;
 import com.dataart.obd2.devicehive.DevicePreferences;
 import com.github.devicehive.client.model.CommandFilter;
@@ -36,6 +35,23 @@ import io.reactivex.subjects.PublishSubject;
 
 public abstract class OBD2Gateway {
     private final static String TAG = OBD2Gateway.class.getSimpleName();
+
+    /**
+     * Command status "Completed" value.
+     */
+    public static final String STATUS_COMLETED = "Completed";
+
+    /**
+     * Command status "Failed" value.
+     */
+    public static final String STATUS_FAILED = "Failed";
+
+    /**
+     * Command status "Failed" value.
+     */
+    public static final String STATUS_WAITING = "Waiting";
+
+    
     private Context mContext;
     private OBD2Reader mObd2Reader;
     private DeviceHive deviceHive;
@@ -77,9 +93,7 @@ public abstract class OBD2Gateway {
                         Object obj = null;
                         try {
                             obj = method.invoke(data);
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        } catch (InvocationTargetException e) {
+                        } catch (IllegalAccessException | InvocationTargetException e) {
                             e.printStackTrace();
                         }
                         if (obj != null) {
@@ -97,7 +111,7 @@ public abstract class OBD2Gateway {
     public void start() {
         final DevicePreferences prefs = new DevicePreferences();
         deviceHive = DeviceHive.getInstance().init(prefs.getServerUrl(),
-                "");
+                prefs.getAccessKey());
 
         DHResponse<Device> deviceDHResponse = deviceHive.getDevice(prefs.getGatewayId());
 
@@ -148,7 +162,7 @@ public abstract class OBD2Gateway {
 
             @Override
             public void onNext(DeviceCommand command) {
-                String status = CommandResult.STATUS_FAILED;
+                String status = STATUS_FAILED;
                 String result = "";
 
                 final String name = command.getCommandName();
@@ -158,15 +172,15 @@ public abstract class OBD2Gateway {
                         String codes = troubleCodesCommand.getFormattedResult();
                         if (codes != null) {
                             final String codeArray[] = codes.split("\n");
-                            command.setStatus(CommandResult.STATUS_COMLETED);
+                            command.setStatus(STATUS_COMLETED);
                             command.setResult(new JsonStringWrapper(new Gson().toJson(codeArray)));
                             command.updateCommand();
                         } else {
-                            status = CommandResult.STATUS_FAILED;
+                            status = STATUS_FAILED;
                             result = "Failed to read codes";
                         }
                     } else {
-                        status = CommandResult.STATUS_FAILED;
+                        status = STATUS_FAILED;
                         result = "Failed to run troubleCodesCommand";
                     }
                 } else if (name.equalsIgnoreCase("RunCommand")) {
@@ -176,7 +190,7 @@ public abstract class OBD2Gateway {
                     final String mode = (params != null) ? params.getMode() : null;
                     final String pid = (params != null) ? params.getPid() : null;
                     if (mode == null || pid == null) {
-                        status = CommandResult.STATUS_FAILED;
+                        status = STATUS_FAILED;
                         result = "Please specify mode and pid parameters";
                     } else {
                         ObdRawCommand obdCommand = new ObdRawCommand(mode + " " + pid);
@@ -187,15 +201,15 @@ public abstract class OBD2Gateway {
                             // ignore response error and send it as is
                         }
                         if (commandRes) {
-                            status = CommandResult.STATUS_COMLETED;
+                            status = STATUS_COMLETED;
                             result = obdCommand.getFormattedResult();
                         } else {
-                            status = CommandResult.STATUS_FAILED;
+                            status = STATUS_FAILED;
                             result = "Failed to run command";
                         }
                     }
                 } else {
-                    status = CommandResult.STATUS_FAILED;
+                    status = STATUS_FAILED;
                     result = mContext.getString(R.string.unknown_commnad);
                 }
                 command.setStatus(status);

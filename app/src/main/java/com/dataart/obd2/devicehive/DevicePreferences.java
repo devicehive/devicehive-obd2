@@ -2,7 +2,6 @@ package com.dataart.obd2.devicehive;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 
 import com.dataart.obd2.OBD2Application;
 
@@ -75,14 +74,4 @@ public class DevicePreferences {
         editor.commit();
     }
 
-    public void setCredentialsAsync(final String accessKey) {
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                setAccessKeySync(accessKey);
-                return null;
-            }
-
-        }.execute();
-    }
 }
