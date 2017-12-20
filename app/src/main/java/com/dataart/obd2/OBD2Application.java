@@ -1,12 +1,12 @@
 package com.dataart.obd2;
 
-import android.support.multidex.MultiDexApplication;
+import android.app.Application;
 
 /**
  * Created by alrybakov
  */
 
-public class OBD2Application extends MultiDexApplication {
+public class OBD2Application extends Application {
 
     private static OBD2Application application;
 

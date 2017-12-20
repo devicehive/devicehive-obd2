@@ -15,7 +15,6 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.dataart.android.devicehive.network.DeviceHiveApiService;
 import com.dataart.obd2.MainActivity;
 import com.dataart.obd2.R;
 
@@ -85,7 +84,6 @@ public class OBD2Service extends Service {
     public void onDestroy() {
         Timber.d("Service.onDestroy");
         mObd2Gateway.stop();
-        stopService(new Intent(this, DeviceHiveApiService.class));
         if (mReceiver != null) {
             unregisterReceiver(mReceiver);
         }
@@ -144,7 +142,7 @@ public class OBD2Service extends Service {
         stackBuilder.addNextIntent(resultIntent);
         final PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        mBuilder = new NotificationCompat.Builder(this)
+        mBuilder = new NotificationCompat.Builder(this,"1")
                 .setContentText(getString(R.string.notification_disconnected))
                 .setContentTitle(getString(R.string.device_hive))
                 .setSmallIcon(R.drawable.ic_le_service)

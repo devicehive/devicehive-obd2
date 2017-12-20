@@ -16,7 +16,7 @@
     <string name="button_stop">Stop service</string>
 
     <string name="default_server_url">http://playground.devicehive.com/api/rest</string>
-    <string name="default_gateway_id">devicehive_obd2_andoid</string>
+    <string name="default_gateway_id">devicehive_obd2_android</string>
     <string name="default_accesskey">8Gff/CCqkLYkuYHwa2oXf2GCmpyaLsuOlVYkttL93LQ=</string>
 
     <string name="error_message_bt_not_supported">Bluetooth not supported.\nApplication will close itself</string>
