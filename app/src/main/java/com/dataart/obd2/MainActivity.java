@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -48,6 +47,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View view) {
             saveValues();
+            validateValues();
+            if (isFieldsEmpty()) {
+                return;
+            }
             OBD2Service.stop(MainActivity.this);
             OBD2Service.start(MainActivity.this);
             restartServiceButton.setVisibility(View.GONE);
@@ -100,16 +103,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Timber.plant(new Timber.DebugTree());
-
-//        Warn if developer tries to lower SDK version
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            alertSdkVersionMismatch(() -> {
-                finish();
-                System.exit(0);
-            });
-
-            return;
-        }
 
         init();
     }
@@ -333,6 +326,13 @@ public class MainActivity extends AppCompatActivity {
             final String mac = obd2mac.toString();
             prefs.setOBD2MacSync(mac.substring(mac.lastIndexOf(" ") + 1));
         }
+    }
+
+    private boolean isFieldsEmpty() {
+        String serverUrl = serverUrlEditText.getText().toString();
+        String gatewayId = gatewayIdEditText.getText().toString();
+        String accessKey = accessKeyEditText.getText().toString();
+        return TextUtils.isEmpty(serverUrl) || TextUtils.isEmpty(gatewayId) || TextUtils.isEmpty(accessKey);
     }
 
     @Override

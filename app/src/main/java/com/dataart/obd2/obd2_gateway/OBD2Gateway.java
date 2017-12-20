@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -51,11 +52,10 @@ public abstract class OBD2Gateway {
      */
     public static final String STATUS_WAITING = "Waiting";
 
-    
+
     private Context mContext;
     private OBD2Reader mObd2Reader;
     private DeviceHive deviceHive;
-    private Device device;
     PublishSubject<DeviceCommand> source;
 
     public OBD2Gateway(Context context) {
@@ -81,41 +81,48 @@ public abstract class OBD2Gateway {
             }
 
             @Override
-            protected void dataCallback(OBD2Data data) {
-                Method[] methods = OBD2Data.class.getDeclaredMethods();
+            protected void dataCallback(OBD2Data d) {
+                Observable.just(d).observeOn(Schedulers.io()).subscribeOn(Schedulers.io()).subscribe(data -> {
+                    DHResponse<Device> deviceDHResponse = deviceHive.getDevice(prefs.getGatewayId());
+                    if (!deviceDHResponse.isSuccessful()) {
+                        return;
+                    }
+                    Device device = deviceDHResponse.getData();
+                    Method[] methods = OBD2Data.class.getDeclaredMethods();
 
-                //Full info data from obd
-                HashMap<String, Object> map = new HashMap<>();
+                    //Full info data from obd
+                    HashMap<String, Object> map = new HashMap<>();
 
-                for (Method method : methods) {
-                    String name = method.getName();
-                    if (name.startsWith("get")) {
-                        Object obj = null;
-                        try {
-                            obj = method.invoke(data);
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            e.printStackTrace();
-                        }
-                        if (obj != null) {
-                            map.put(name.substring(3), obj);
+                    for (Method method : methods) {
+                        String name = method.getName();
+                        if (name.startsWith("get")) {
+                            Object obj = null;
+                            try {
+                                obj = method.invoke(data);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                e.printStackTrace();
+                            }
+                            if (obj != null) {
+                                map.put(name.substring(3), obj);
+                            }
                         }
                     }
-                }
 
-                device.sendNotification("obd2", Collections.singletonList(
-                        new Parameter("parameters", new Gson().toJson(map))));
+                    device.sendNotification("obd2", Collections.singletonList(
+                            new Parameter("parameters", new Gson().toJson(map))));
+                });
             }
         };
     }
 
     public void start() {
-        final DevicePreferences prefs = new DevicePreferences();
+        DevicePreferences prefs = new DevicePreferences();
+        System.out.println(prefs.getAccessKey());
         deviceHive = DeviceHive.getInstance().init(prefs.getServerUrl(),
                 prefs.getAccessKey());
 
-        DHResponse<Device> deviceDHResponse = deviceHive.getDevice(prefs.getGatewayId());
-
         mObd2Reader.start();
+        subscribeOnCommands();
     }
 
     public void stop() {
