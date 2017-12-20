@@ -1,5 +1,6 @@
 package com.dataart.obd2.obd2_gateway;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -59,6 +60,11 @@ public class OBD2Service extends Service {
             send(ACTION_BT_PERMISSION_REQUEST);
         }
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel mChannel = new NotificationChannel("1", "OBD2", importance);
+            mNotificationManager.createNotificationChannel(mChannel);
+        }
         registerReceiver(getBtStateReceiver(), new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
         mObd2Gateway = new OBD2Gateway(this) {
             @Override
@@ -142,7 +148,7 @@ public class OBD2Service extends Service {
         stackBuilder.addNextIntent(resultIntent);
         final PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        mBuilder = new NotificationCompat.Builder(this,"1")
+        mBuilder = new NotificationCompat.Builder(this, "1")
                 .setContentText(getString(R.string.notification_disconnected))
                 .setContentTitle(getString(R.string.device_hive))
                 .setSmallIcon(R.drawable.ic_le_service)
