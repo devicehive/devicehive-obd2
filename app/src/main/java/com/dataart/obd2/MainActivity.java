@@ -22,10 +22,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.dataart.obd2.devicehive.DevicePreferences;
 import com.dataart.obd2.obd2_gateway.OBD2Service;
 
+import java.util.Objects;
 import java.util.Set;
 
 import timber.log.Timber;
@@ -36,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothManager mBluetoothManager;
     private EditText serverUrlEditText;
     private EditText gatewayIdEditText;
-    private EditText accessKeyEditText;
+    private EditText jwtAccessTokenEditText;
     private TextView hintText;
     private Button serviceButton;
     private Button restartServiceButton;
@@ -46,11 +48,14 @@ public class MainActivity extends AppCompatActivity {
     private final View.OnClickListener restartClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            saveValues();
-            validateValues();
-            if (isFieldsEmpty()) {
+            if (!validateValues()) {
                 return;
             }
+            if (!isDevicesEnabled()) {
+                Toast.makeText(MainActivity.this, "There is no paired devices were found", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            saveValues();
             OBD2Service.stop(MainActivity.this);
             OBD2Service.start(MainActivity.this);
             restartServiceButton.setVisibility(View.GONE);
@@ -126,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
 
         serverUrlEditText = findViewById(R.id.server_url_edit);
         gatewayIdEditText = findViewById(R.id.settings_gateway_id);
-        accessKeyEditText = findViewById(R.id.accesskey_edit);
+        jwtAccessTokenEditText = findViewById(R.id.jwtRefreshToken_edit);
         hintText = findViewById(R.id.hintText);
         btDevicesSpinner = findViewById(R.id.bt_list);
 
@@ -145,8 +150,8 @@ public class MainActivity extends AppCompatActivity {
         gatewayIdEditText.setOnEditorActionListener(changeListener);
         gatewayIdEditText.addTextChangedListener(changeWatcher);
 
-        accessKeyEditText.setOnEditorActionListener(changeListener);
-        accessKeyEditText.addTextChangedListener(changeWatcher);
+        jwtAccessTokenEditText.setOnEditorActionListener(changeListener);
+        jwtAccessTokenEditText.addTextChangedListener(changeWatcher);
 
         btDevicesSpinner.setOnItemSelectedListener(btItemSelectedListener);
 
@@ -190,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isServiceRunning() {
         final ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (OBD2Service.class.getName().equals(service.service.getClassName())) {
+            if (Objects.equals(OBD2Service.class.getName(), service.service.getClassName())) {
                 return true;
             }
         }
@@ -199,6 +204,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void startService() {
         if (!isServiceStarted) {
+            if (!validateValues()) {
+                return;
+            }
+            if (!isDevicesEnabled()) {
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.unsupported)
+                        .setMessage(R.string.error_message_bt_empty_list)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> dialog.dismiss())
+                        .create().show();
+                return;
+            }
             saveValues();
             onServiceRunning();
             OBD2Service.start(MainActivity.this);
@@ -221,11 +237,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean isRestartRequired() {
         final String newUrl = serverUrlEditText.getText().toString();
         final String newGatewayId = gatewayIdEditText.getText().toString();
-        final String newAccessKey = accessKeyEditText.getText().toString();
+        final String newAccessKey = jwtAccessTokenEditText.getText().toString();
         final Object newMac = btDevicesSpinner.getSelectedItem();
-        return !(prefs.getServerUrl().equals(newUrl) &&
-                prefs.getGatewayId().equals(newGatewayId) &&
-                prefs.getAccessKey().equals(newAccessKey) &&
+        return !(Objects.equals(prefs.getServerUrl(), newUrl) &&
+                Objects.equals(prefs.getGatewayId(), newGatewayId) &&
+                Objects.equals(prefs.getJwtRefreshToken(), newAccessKey) &&
                 (newMac != null && newMac.toString().endsWith(prefs.getOBD2Mac())));
     }
 
@@ -259,6 +275,10 @@ public class MainActivity extends AppCompatActivity {
         listAdapter.notifyDataSetChanged();
     }
 
+    private boolean isDevicesEnabled() {
+        return BluetoothAdapter.getDefaultAdapter().getBondedDevices().size() > 0;
+    }
+
     private void resetValues() {
         String serverUrl = prefs.getServerUrl();
         serverUrlEditText.setText(
@@ -274,8 +294,8 @@ public class MainActivity extends AppCompatActivity {
                         : gatewayId
         );
 
-        String accessKey = prefs.getAccessKey();
-        accessKeyEditText.setText(
+        String accessKey = prefs.getJwtRefreshToken();
+        jwtAccessTokenEditText.setText(
                 TextUtils.isEmpty(accessKey)
                         ? ""
                         : accessKey
@@ -287,15 +307,15 @@ public class MainActivity extends AppCompatActivity {
     private void resetErrors() {
         serverUrlEditText.setError(null);
         gatewayIdEditText.setError(null);
-        accessKeyEditText.setError(null);
+        jwtAccessTokenEditText.setError(null);
     }
 
     private boolean validateValues() {
         resetErrors();
 
-        final String serverUrl = serverUrlEditText.getText().toString();
-        final String gatewayId = gatewayIdEditText.getText().toString();
-        final String accessKey = accessKeyEditText.getText().toString();
+        String serverUrl = serverUrlEditText.getText().toString().trim();
+        String gatewayId = gatewayIdEditText.getText().toString().trim();
+        String jwtRefreshToken = jwtAccessTokenEditText.getText().toString().trim();
 
         if (TextUtils.isEmpty(serverUrl)) {
             serverUrlEditText.setError(getString(R.string.error_message_empty_server_url));
@@ -303,9 +323,9 @@ public class MainActivity extends AppCompatActivity {
         } else if (TextUtils.isEmpty(gatewayId)) {
             gatewayIdEditText.setError(getString(R.string.error_message_empty_gateway_id));
             gatewayIdEditText.requestFocus();
-        } else if (TextUtils.isEmpty(accessKey)) {
-            accessKeyEditText.setError(getString(R.string.error_message_empty_accesskey));
-            accessKeyEditText.requestFocus();
+        } else if (TextUtils.isEmpty(jwtRefreshToken)) {
+            jwtAccessTokenEditText.setError(getString(R.string.error_message_empty_jwt_refresh_token));
+            jwtAccessTokenEditText.requestFocus();
         } else {
             return true;
         }
@@ -314,12 +334,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveValues() {
-        final String serverUrl = serverUrlEditText.getText().toString();
-        final String gatewayId = gatewayIdEditText.getText().toString();
-        final String accessKey = accessKeyEditText.getText().toString();
+        final String serverUrl = serverUrlEditText.getText().toString().trim();
+        final String gatewayId = gatewayIdEditText.getText().toString().trim();
+        final String accessKey = jwtAccessTokenEditText.getText().toString().trim();
         final Object obd2mac = btDevicesSpinner.getSelectedItem();
 
-        prefs.setAccessKeySync(accessKey);
+        prefs.setJwtRefreshTokenSync(accessKey);
         prefs.setServerUrlSync(serverUrl);
         prefs.setGatewayIdSync(gatewayId);
         if (obd2mac != null) {
@@ -331,7 +351,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFieldsEmpty() {
         String serverUrl = serverUrlEditText.getText().toString();
         String gatewayId = gatewayIdEditText.getText().toString();
-        String accessKey = accessKeyEditText.getText().toString();
+        String accessKey = jwtAccessTokenEditText.getText().toString();
         return TextUtils.isEmpty(serverUrl) || TextUtils.isEmpty(gatewayId) || TextUtils.isEmpty(accessKey);
     }
 

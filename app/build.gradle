@@ -43,6 +43,6 @@ dependencies {
     implementation "io.reactivex.rxjava2:rxjava:${rxjava}"
     implementation 'com.google.guava:guava:21.0'
 
-    implementation 'com.github.devicehive:devicehive-java:3.0.10'
+    implementation 'com.github.devicehive:devicehive-java:3.0.11'
 
 }

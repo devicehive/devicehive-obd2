@@ -15,8 +15,8 @@ public class DevicePreferences {
     private final static String KEY_GATEWAY_ID = NAMESPACE
             .concat(".KEY_GATEWAY_ID");
 
-    private final static String KEY_ACCESSKEY= NAMESPACE
-            .concat(".KEY_ACCESSKEY");
+    private final static String JWT_REFRESH_TOKEN = NAMESPACE
+            .concat(".KEY_JWT_REFRESH_TOKEN");
 
     private final static String KEY_OBD2MAC= NAMESPACE
             .concat(".OBD2_MAC");
@@ -57,14 +57,14 @@ public class DevicePreferences {
         editor.commit();
     }
 
-    public String getAccessKey() {
-        return preferences.getString(KEY_ACCESSKEY, null);
+    public String getJwtRefreshToken() {
+        return preferences.getString(JWT_REFRESH_TOKEN, null);
     }
 
 
-    public void setAccessKeySync(String accessKey) {
+    public void setJwtRefreshTokenSync(String jwtRefreshToken) {
         final SharedPreferences.Editor editor = preferences.edit();
-        editor.putString(KEY_ACCESSKEY, accessKey);
+        editor.putString(JWT_REFRESH_TOKEN, jwtRefreshToken);
         editor.commit();
     }
 

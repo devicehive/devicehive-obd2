@@ -54,7 +54,7 @@ public class OBD2Service extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
             send(ACTION_BT_PERMISSION_REQUEST);
@@ -93,6 +93,7 @@ public class OBD2Service extends Service {
         if (mReceiver != null) {
             unregisterReceiver(mReceiver);
         }
+        mObd2Gateway = null;
         mNotificationManager.cancel(LE_NOTIFICATION_ID);
         super.onDestroy();
         Log.d(TAG, "OBD2Service was destroyed");
@@ -111,7 +112,7 @@ public class OBD2Service extends Service {
     }
 
     private void notifyNewState(final String text) {
-        Timber.d("Service.onUnbind");
+        Timber.d("notifyNewState");
         mBuilder.setContentText(text);
         mNotificationManager.notify(LE_NOTIFICATION_ID, mBuilder.build());
     }

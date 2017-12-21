@@ -29,6 +29,7 @@ import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
+import timber.log.Timber;
 
 /**
  * Created by Nikolay Khabarov on 8/8/16.
@@ -51,6 +52,8 @@ public abstract class OBD2Gateway {
      * Command status "Failed" value.
      */
     public static final String STATUS_WAITING = "Waiting";
+    public static final String GET_TROUBLE_CODES = "GetTroubleCodes";
+    public static final String RUN_COMMAND = "RunCommand";
 
 
     private Context mContext;
@@ -84,6 +87,8 @@ public abstract class OBD2Gateway {
             protected void dataCallback(OBD2Data d) {
                 Observable.just(d).observeOn(Schedulers.io()).subscribeOn(Schedulers.io()).subscribe(data -> {
                     DHResponse<Device> deviceDHResponse = deviceHive.getDevice(prefs.getGatewayId());
+                    Timber.d(deviceDHResponse.toString());
+
                     if (!deviceDHResponse.isSuccessful()) {
                         return;
                     }
@@ -117,9 +122,10 @@ public abstract class OBD2Gateway {
 
     public void start() {
         DevicePreferences prefs = new DevicePreferences();
-        System.out.println(prefs.getAccessKey());
-        deviceHive = DeviceHive.getInstance().init(prefs.getServerUrl(),
-                prefs.getAccessKey());
+        Timber.d(prefs.getJwtRefreshToken());
+        Timber.d(prefs.getGatewayId());
+        deviceHive = DeviceHive.getInstance()
+                .init(prefs.getServerUrl(), prefs.getJwtRefreshToken());
 
         mObd2Reader.start();
         subscribeOnCommands();
@@ -143,15 +149,16 @@ public abstract class OBD2Gateway {
         return new Observer<DeviceCommand>() {
             @Override
             public void onSubscribe(Disposable d) {
-                System.out.println("onSubscribe");
                 new Thread(() -> {
                     DevicePreferences prefs = new DevicePreferences();
                     DHResponse<Device> deviceDHResponse = deviceHive.getDevice(prefs.getGatewayId());
+                    Timber.d(deviceDHResponse.toString());
                     if (!deviceDHResponse.isSuccessful()) {
                         return;
                     }
                     Device device = deviceDHResponse.getData();
                     CommandFilter commandFilter = new CommandFilter();
+                    commandFilter.setCommandNames();
                     device.subscribeCommands(commandFilter, new DeviceCommandsCallback() {
                         @Override
                         public void onSuccess(List<DeviceCommand> list) {
@@ -171,14 +178,15 @@ public abstract class OBD2Gateway {
             public void onNext(DeviceCommand command) {
                 String status = STATUS_FAILED;
                 String result = "";
-
-                final String name = command.getCommandName();
-                if (name.equalsIgnoreCase("GetTroubleCodes")) {
+                Timber.d(command.toString());
+                String name = command.getCommandName();
+                if (name.equalsIgnoreCase(GET_TROUBLE_CODES)) {
                     TroubleCodesCommand troubleCodesCommand = new TroubleCodesCommand();
                     if (mObd2Reader.runCommand(troubleCodesCommand)) {
                         String codes = troubleCodesCommand.getFormattedResult();
+                        Timber.d("Inside");
                         if (codes != null) {
-                            final String codeArray[] = codes.split("\n");
+                            String codeArray[] = codes.split("\n");
                             command.setStatus(STATUS_COMLETED);
                             command.setResult(new JsonStringWrapper(new Gson().toJson(codeArray)));
                             command.updateCommand();
@@ -190,7 +198,7 @@ public abstract class OBD2Gateway {
                         status = STATUS_FAILED;
                         result = "Failed to run troubleCodesCommand";
                     }
-                } else if (name.equalsIgnoreCase("RunCommand")) {
+                } else if (name.equalsIgnoreCase(RUN_COMMAND)) {
                     JsonStringWrapper wrapperParams = command.getParameters();
                     OBD2Params params = new Gson().fromJson(wrapperParams.getJsonString(), OBD2Params.class);
 
@@ -221,7 +229,9 @@ public abstract class OBD2Gateway {
                 }
                 command.setStatus(status);
                 command.setResult(new JsonStringWrapper(result));
-                command.updateCommand();
+                boolean success = command.updateCommand();
+                Timber.d(success + "\n" + command.toString());
+
 
             }
 
