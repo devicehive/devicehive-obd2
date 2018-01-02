@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -176,20 +177,18 @@ public abstract class OBD2Gateway {
 
             @Override
             public void onNext(DeviceCommand command) {
-                String status = STATUS_FAILED;
-                String result = "";
-                Timber.d(command.toString());
+                String status;
+                String result;
                 String name = command.getCommandName();
+                Timber.d(command.toString());
                 if (name.equalsIgnoreCase(GET_TROUBLE_CODES)) {
                     TroubleCodesCommand troubleCodesCommand = new TroubleCodesCommand();
-                    if (mObd2Reader.runCommand(troubleCodesCommand)) {
+                    if (true) {
                         String codes = troubleCodesCommand.getFormattedResult();
-                        Timber.d("Inside");
                         if (codes != null) {
                             String codeArray[] = codes.split("\n");
-                            command.setStatus(STATUS_COMLETED);
-                            command.setResult(new JsonStringWrapper(new Gson().toJson(codeArray)));
-                            command.updateCommand();
+                            result = Arrays.toString(codeArray);
+                            status = STATUS_COMLETED;
                         } else {
                             status = STATUS_FAILED;
                             result = "Failed to read codes";
@@ -229,14 +228,13 @@ public abstract class OBD2Gateway {
                 }
                 command.setStatus(status);
                 command.setResult(new JsonStringWrapper(result));
-                boolean success = command.updateCommand();
-                Timber.d(success + "\n" + command.toString());
-
+                command.updateCommand();
 
             }
 
             @Override
             public void onError(Throwable e) {
+                e.printStackTrace();
             }
 
             @Override
