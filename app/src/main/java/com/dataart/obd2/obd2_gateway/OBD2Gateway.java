@@ -12,11 +12,11 @@ import com.github.devicehive.client.model.Parameter;
 import com.github.devicehive.client.service.Device;
 import com.github.devicehive.client.service.DeviceCommand;
 import com.github.devicehive.client.service.DeviceHive;
-import com.github.devicehive.rest.model.JsonStringWrapper;
 import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.protocol.ObdRawCommand;
 import com.github.pires.obd.exceptions.ResponseException;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -55,6 +55,8 @@ public abstract class OBD2Gateway {
     public static final String STATUS_WAITING = "Waiting";
     public static final String GET_TROUBLE_CODES = "GetTroubleCodes";
     public static final String RUN_COMMAND = "RunCommand";
+    public static final String MODE = "mode";
+    public static final String PID = "pid";
 
 
     private Context mContext;
@@ -183,7 +185,7 @@ public abstract class OBD2Gateway {
                 Timber.d(command.toString());
                 if (name.equalsIgnoreCase(GET_TROUBLE_CODES)) {
                     TroubleCodesCommand troubleCodesCommand = new TroubleCodesCommand();
-                    if (true) {
+                    if (mObd2Reader.runCommand(troubleCodesCommand)) {
                         String codes = troubleCodesCommand.getFormattedResult();
                         if (codes != null) {
                             String codeArray[] = codes.split("\n");
@@ -198,11 +200,11 @@ public abstract class OBD2Gateway {
                         result = "Failed to run troubleCodesCommand";
                     }
                 } else if (name.equalsIgnoreCase(RUN_COMMAND)) {
-                    JsonStringWrapper wrapperParams = command.getParameters();
-                    OBD2Params params = new Gson().fromJson(wrapperParams.getJsonString(), OBD2Params.class);
+                    JsonObject params = command.getParameters();
 
-                    final String mode = (params != null) ? params.getMode() : null;
-                    final String pid = (params != null) ? params.getPid() : null;
+                    final String mode = (params != null) ? params.get(MODE).getAsString() : null;
+                    final String pid = (params != null) ? params.get(PID).getAsString() : null;
+
                     if (mode == null || pid == null) {
                         status = STATUS_FAILED;
                         result = "Please specify mode and pid parameters";
@@ -227,7 +229,11 @@ public abstract class OBD2Gateway {
                     result = mContext.getString(R.string.unknown_commnad);
                 }
                 command.setStatus(status);
-                command.setResult(new JsonStringWrapper(result));
+
+                JsonObject resultJson = new JsonObject();
+                resultJson.addProperty("result", result);
+
+                command.setResult(resultJson);
                 command.updateCommand();
 
             }

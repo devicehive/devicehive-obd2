@@ -1,5 +1,6 @@
 package com.dataart.obd2.devicehive;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -44,13 +45,13 @@ public class DevicePreferences {
     public String getOBD2Mac() {
         return preferences.getString(KEY_OBD2MAC, null);
     }
-
+    @SuppressLint("ApplySharedPref")
     public void setServerUrlSync(String serverUrl) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_SERVER_URL, serverUrl);
         editor.commit();
     }
-
+    @SuppressLint("ApplySharedPref")
     public void setGatewayIdSync(String gatewayId) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_GATEWAY_ID, gatewayId);
@@ -61,13 +62,13 @@ public class DevicePreferences {
         return preferences.getString(JWT_REFRESH_TOKEN, null);
     }
 
-
+    @SuppressLint("ApplySharedPref")
     public void setJwtRefreshTokenSync(String jwtRefreshToken) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(JWT_REFRESH_TOKEN, jwtRefreshToken);
         editor.commit();
     }
-
+    @SuppressLint("ApplySharedPref")
     public void setOBD2MacSync(String mac) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_OBD2MAC, mac);
