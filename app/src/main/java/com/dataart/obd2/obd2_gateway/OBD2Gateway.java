@@ -59,6 +59,8 @@ public abstract class OBD2Gateway {
     public static final String PID = "pid";
     public static final String OBD_2 = "obd2";
     public static final String PARAMETERS = "parameters";
+    public static final String GET = "get";
+    public static final String RESULT = "result";
 
 
     private Context mContext;
@@ -105,7 +107,7 @@ public abstract class OBD2Gateway {
 
                     for (Method method : methods) {
                         String name = method.getName();
-                        if (name.startsWith("get")) {
+                        if (name.startsWith(GET)) {
                             Object obj = null;
                             try {
                                 obj = method.invoke(data);
@@ -249,7 +251,7 @@ public abstract class OBD2Gateway {
                 command.setStatus(status);
 
                 JsonObject resultJson = new JsonObject();
-                resultJson.addProperty("result", result);
+                resultJson.addProperty(RESULT, result);
 
                 command.setResult(resultJson);
                 command.updateCommand();
