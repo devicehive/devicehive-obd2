@@ -57,6 +57,8 @@ public abstract class OBD2Gateway {
     public static final String RUN_COMMAND = "RunCommand";
     public static final String MODE = "mode";
     public static final String PID = "pid";
+    public static final String OBD_2 = "obd2";
+    public static final String PARAMETERS = "parameters";
 
 
     private Context mContext;
@@ -115,9 +117,25 @@ public abstract class OBD2Gateway {
                             }
                         }
                     }
-
-                    device.sendNotification("obd2", Collections.singletonList(
-                            new Parameter("parameters", new Gson().toJson(map))));
+                    JsonObject params = new JsonObject();
+                    for (String s : map.keySet()) {
+                        Object o = map.get(s);
+                        if (o instanceof Integer) {
+                            params.addProperty(s, (Integer) o);
+                        } else if (o instanceof Long) {
+                            params.addProperty(s, (Long) o);
+                        } else if (o instanceof Double) {
+                            params.addProperty(s, (Double) o);
+                        } else if (o instanceof Float) {
+                            params.addProperty(s, (Float) o);
+                        } else if (o instanceof String) {
+                            params.addProperty(s, (String) o);
+                        } else {
+                            params.addProperty(s, o.toString());
+                        }
+                    }
+                    device.sendNotification(OBD_2, Collections.singletonList(
+                            new Parameter(PARAMETERS, new Gson().toJson(params))));
                 });
             }
         };
