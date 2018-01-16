@@ -15,13 +15,12 @@ import com.github.devicehive.client.service.DeviceHive;
 import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.protocol.ObdRawCommand;
 import com.github.pires.obd.exceptions.ResponseException;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -119,25 +118,12 @@ public abstract class OBD2Gateway {
                             }
                         }
                     }
-                    JsonObject params = new JsonObject();
+                    List<Parameter> parameters = new ArrayList<>();
                     for (String s : map.keySet()) {
-                        Object o = map.get(s);
-                        if (o instanceof Integer) {
-                            params.addProperty(s, (Integer) o);
-                        } else if (o instanceof Long) {
-                            params.addProperty(s, (Long) o);
-                        } else if (o instanceof Double) {
-                            params.addProperty(s, (Double) o);
-                        } else if (o instanceof Float) {
-                            params.addProperty(s, (Float) o);
-                        } else if (o instanceof String) {
-                            params.addProperty(s, (String) o);
-                        } else {
-                            params.addProperty(s, o.toString());
-                        }
+
+                        parameters.add(new Parameter(s, map.get(s).toString()));
                     }
-                    device.sendNotification(OBD_2, Collections.singletonList(
-                            new Parameter(PARAMETERS, new Gson().toJson(params))));
+                    device.sendNotification(OBD_2, parameters);
                 });
             }
         };
