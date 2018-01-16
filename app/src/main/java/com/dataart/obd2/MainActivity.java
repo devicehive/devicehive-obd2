@@ -7,8 +7,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -22,18 +20,12 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.dataart.android.devicehive.Notification;
-import com.dataart.obd2.obd2_gateway.OBD2Service;
-import com.dataart.obd2.devicehive.DeviceHive;
 import com.dataart.obd2.devicehive.DevicePreferences;
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.dataart.obd2.obd2_gateway.OBD2Service;
 
 import java.util.Objects;
 import java.util.Set;
@@ -41,12 +33,12 @@ import java.util.Set;
 import timber.log.Timber;
 
 
-public class MainActivity extends AppCompatActivity implements DeviceHive.NotificationListener {
+public class MainActivity extends AppCompatActivity {
 
     private BluetoothManager mBluetoothManager;
     private EditText serverUrlEditText;
     private EditText gatewayIdEditText;
-    private EditText accessKeyEditText;
+    private EditText jwtAccessTokenEditText;
     private TextView hintText;
     private Button serviceButton;
     private Button restartServiceButton;
@@ -56,6 +48,13 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     private final View.OnClickListener restartClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
+            if (!validateValues()) {
+                return;
+            }
+            if (!isDevicesEnabled()) {
+                Toast.makeText(MainActivity.this, "There is no paired devices were found", Toast.LENGTH_SHORT).show();
+                return;
+            }
             saveValues();
             OBD2Service.stop(MainActivity.this);
             OBD2Service.start(MainActivity.this);
@@ -63,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
             serviceButton.setVisibility(View.VISIBLE);
             onServiceRunning();
             hintText.setVisibility(View.GONE);
+
         }
     };
     private final TextView.OnEditorActionListener changeListener = (textView, actionId, keyEvent) -> {
@@ -96,17 +96,12 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
             onDataChanged();
         }
     };
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar myToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle(R.string.app_name);
@@ -114,20 +109,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
 
         Timber.plant(new Timber.DebugTree());
 
-//        Warn if developer tries to lower SDK version
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            alertSdkVersionMismatch(() -> {
-                finish();
-                System.exit(0);
-            });
-
-            return;
-        }
-
         init();
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     private void fatalDialog(int message) {
@@ -147,23 +129,18 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
 
         prefs = new DevicePreferences();
 
-        serverUrlEditText = (EditText) findViewById(R.id.server_url_edit);
-        gatewayIdEditText = (EditText) findViewById(R.id.settings_gateway_id);
-        accessKeyEditText = (EditText) findViewById(R.id.accesskey_edit);
-        hintText = (TextView) findViewById(R.id.hintText);
-        btDevicesSpinner = (Spinner) findViewById(R.id.bt_list);
+        serverUrlEditText = findViewById(R.id.server_url_edit);
+        gatewayIdEditText = findViewById(R.id.settings_gateway_id);
+        jwtAccessTokenEditText = findViewById(R.id.jwtRefreshToken_edit);
+        hintText = findViewById(R.id.hintText);
+        btDevicesSpinner = findViewById(R.id.bt_list);
 
         resetValues();
 
-        serviceButton = (Button) findViewById(R.id.service_button);
-        serviceButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startService();
-            }
-        });
+        serviceButton = findViewById(R.id.service_button);
+        serviceButton.setOnClickListener(view -> startService());
 
-        restartServiceButton = (Button) findViewById(R.id.save_button);
+        restartServiceButton = findViewById(R.id.save_button);
         //noinspection ConstantConditions
         restartServiceButton.setOnClickListener(restartClickListener);
 
@@ -173,8 +150,8 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         gatewayIdEditText.setOnEditorActionListener(changeListener);
         gatewayIdEditText.addTextChangedListener(changeWatcher);
 
-        accessKeyEditText.setOnEditorActionListener(changeListener);
-        accessKeyEditText.addTextChangedListener(changeWatcher);
+        jwtAccessTokenEditText.setOnEditorActionListener(changeListener);
+        jwtAccessTokenEditText.addTextChangedListener(changeWatcher);
 
         btDevicesSpinner.setOnItemSelectedListener(btItemSelectedListener);
 
@@ -218,7 +195,7 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     private boolean isServiceRunning() {
         final ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (OBD2Service.class.getName().equals(service.service.getClassName())) {
+            if (Objects.equals(OBD2Service.class.getName(), service.service.getClassName())) {
                 return true;
             }
         }
@@ -227,6 +204,17 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
 
     private void startService() {
         if (!isServiceStarted) {
+            if (!validateValues()) {
+                return;
+            }
+            if (!isDevicesEnabled()) {
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.unsupported)
+                        .setMessage(R.string.error_message_bt_empty_list)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> dialog.dismiss())
+                        .create().show();
+                return;
+            }
             saveValues();
             onServiceRunning();
             OBD2Service.start(MainActivity.this);
@@ -249,11 +237,11 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     private boolean isRestartRequired() {
         final String newUrl = serverUrlEditText.getText().toString();
         final String newGatewayId = gatewayIdEditText.getText().toString();
-        final String newAccessKey = accessKeyEditText.getText().toString();
+        final String newAccessKey = jwtAccessTokenEditText.getText().toString();
         final Object newMac = btDevicesSpinner.getSelectedItem();
-        return !(prefs.getServerUrl().equals(newUrl) &&
-                prefs.getGatewayId().equals(newGatewayId) &&
-                prefs.getAccessKey().equals(newAccessKey) &&
+        return !(Objects.equals(prefs.getServerUrl(), newUrl) &&
+                Objects.equals(prefs.getGatewayId(), newGatewayId) &&
+                Objects.equals(prefs.getJwtRefreshToken(), newAccessKey) &&
                 (newMac != null && newMac.toString().endsWith(prefs.getOBD2Mac())));
     }
 
@@ -287,6 +275,10 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         listAdapter.notifyDataSetChanged();
     }
 
+    private boolean isDevicesEnabled() {
+        return BluetoothAdapter.getDefaultAdapter().getBondedDevices().size() > 0;
+    }
+
     private void resetValues() {
         String serverUrl = prefs.getServerUrl();
         serverUrlEditText.setText(
@@ -302,8 +294,8 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
                         : gatewayId
         );
 
-        String accessKey = prefs.getAccessKey();
-        accessKeyEditText.setText(
+        String accessKey = prefs.getJwtRefreshToken();
+        jwtAccessTokenEditText.setText(
                 TextUtils.isEmpty(accessKey)
                         ? ""
                         : accessKey
@@ -315,15 +307,15 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     private void resetErrors() {
         serverUrlEditText.setError(null);
         gatewayIdEditText.setError(null);
-        accessKeyEditText.setError(null);
+        jwtAccessTokenEditText.setError(null);
     }
 
     private boolean validateValues() {
         resetErrors();
 
-        final String serverUrl = serverUrlEditText.getText().toString();
-        final String gatewayId = gatewayIdEditText.getText().toString();
-        final String accessKey = accessKeyEditText.getText().toString();
+        String serverUrl = serverUrlEditText.getText().toString().trim();
+        String gatewayId = gatewayIdEditText.getText().toString().trim();
+        String jwtRefreshToken = jwtAccessTokenEditText.getText().toString().trim();
 
         if (TextUtils.isEmpty(serverUrl)) {
             serverUrlEditText.setError(getString(R.string.error_message_empty_server_url));
@@ -331,9 +323,9 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
         } else if (TextUtils.isEmpty(gatewayId)) {
             gatewayIdEditText.setError(getString(R.string.error_message_empty_gateway_id));
             gatewayIdEditText.requestFocus();
-        } else if (TextUtils.isEmpty(accessKey)) {
-            accessKeyEditText.setError(getString(R.string.error_message_empty_accesskey));
-            accessKeyEditText.requestFocus();
+        } else if (TextUtils.isEmpty(jwtRefreshToken)) {
+            jwtAccessTokenEditText.setError(getString(R.string.error_message_empty_jwt_refresh_token));
+            jwtAccessTokenEditText.requestFocus();
         } else {
             return true;
         }
@@ -342,70 +334,35 @@ public class MainActivity extends AppCompatActivity implements DeviceHive.Notifi
     }
 
     private void saveValues() {
-        final String serverUrl = serverUrlEditText.getText().toString();
-        final String gatewayId = gatewayIdEditText.getText().toString();
-        final String accessKey = accessKeyEditText.getText().toString();
+        final String serverUrl = serverUrlEditText.getText().toString().trim();
+        final String gatewayId = gatewayIdEditText.getText().toString().trim();
+        final String accessKey = jwtAccessTokenEditText.getText().toString().trim();
         final Object obd2mac = btDevicesSpinner.getSelectedItem();
 
-        prefs.setAccessKeySync(accessKey);
+        prefs.setJwtRefreshTokenSync(accessKey);
         prefs.setServerUrlSync(serverUrl);
         prefs.setGatewayIdSync(gatewayId);
         if (obd2mac != null) {
             final String mac = obd2mac.toString();
-            prefs.setOBD2MacSync(mac.substring(mac. lastIndexOf(" ") + 1));
+            prefs.setOBD2MacSync(mac.substring(mac.lastIndexOf(" ") + 1));
         }
     }
 
-    @Override
-    public void onDeviceSentNotification(Notification notification) {
-
-    }
-
-    @Override
-    public void onDeviceFailedToSendNotification(Notification notification) {
-
+    private boolean isFieldsEmpty() {
+        String serverUrl = serverUrlEditText.getText().toString();
+        String gatewayId = gatewayIdEditText.getText().toString();
+        String accessKey = jwtAccessTokenEditText.getText().toString();
+        return TextUtils.isEmpty(serverUrl) || TextUtils.isEmpty(gatewayId) || TextUtils.isEmpty(accessKey);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.connect();
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        Action viewAction = Action.newAction(
-                Action.TYPE_VIEW, // TODO: choose an action type.
-                "Main Page", // TODO: Define a title for the content shown.
-                // TODO: If you have web page content that matches this app activity's content,
-                // make sure this auto-generated web page URL is correct.
-                // Otherwise, set the URL to null.
-                Uri.parse("http://host/path"),
-                // TODO: Make sure this auto-generated app URL is correct.
-                Uri.parse("android-app://com.dataart.obd2/http/host/path")
-        );
-        AppIndex.AppIndexApi.start(client, viewAction);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        Action viewAction = Action.newAction(
-                Action.TYPE_VIEW, // TODO: choose an action type.
-                "Main Page", // TODO: Define a title for the content shown.
-                // TODO: If you have web page content that matches this app activity's content,
-                // make sure this auto-generated web page URL is correct.
-                // Otherwise, set the URL to null.
-                Uri.parse("http://host/path"),
-                // TODO: Make sure this auto-generated app URL is correct.
-                Uri.parse("android-app://com.dataart.obd2/http/host/path")
-        );
-        AppIndex.AppIndexApi.end(client, viewAction);
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.disconnect();
     }
 
     private void alertSdkVersionMismatch(final Runnable runnable) {

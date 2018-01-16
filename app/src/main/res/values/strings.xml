@@ -7,7 +7,7 @@
     <string name="settings_gateway_id">Gateway ID</string>
     <string name="settings_username">Username</string>
     <string name="settings_password">Password</string>
-    <string name="settings_accesskey">Access Key</string>
+    <string name="settings_jwt_access_token">Jwt Refresh Token</string>
     <string name="settings_restart_hint">You have to restart the service in order to apply new parameters</string>
     <string name="settings_obd2">Choose your Bluetooth OBD2 adapter from list of paired devices</string>
 
@@ -16,15 +16,16 @@
     <string name="button_stop">Stop service</string>
 
     <string name="default_server_url">http://playground.devicehive.com/api/rest</string>
-    <string name="default_gateway_id">devicehive_obd2_andoid</string>
+    <string name="default_gateway_id">devicehive-obd2-android</string>
     <string name="default_accesskey">8Gff/CCqkLYkuYHwa2oXf2GCmpyaLsuOlVYkttL93LQ=</string>
 
     <string name="error_message_bt_not_supported">Bluetooth not supported.\nApplication will close itself</string>
+    <string name="error_message_bt_empty_list">There is no paired devices were found</string>
     <string name="error_message_empty_server_url">Server URL is required</string>
     <string name="error_message_empty_gateway_id">Gateway ID is required</string>
     <string name="error_message_empty_username">Username is required</string>
     <string name="error_message_empty_password">Password is required</string>
-    <string name="error_message_empty_accesskey">Access key is required</string>
+    <string name="error_message_empty_jwt_refresh_token">Jwt Refresh Token is required</string>
 
     <string name="info_message_save_settings">Settings were saved</string>
 

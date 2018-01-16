@@ -1,9 +1,9 @@
 package com.dataart.obd2.obd2_gateway;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.TaskStackBuilder;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
@@ -12,10 +12,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.dataart.android.devicehive.network.DeviceHiveApiService;
 import com.dataart.obd2.MainActivity;
 import com.dataart.obd2.R;
 
@@ -54,12 +54,17 @@ public class OBD2Service extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
             send(ACTION_BT_PERMISSION_REQUEST);
         }
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel mChannel = new NotificationChannel("1", "OBD2", importance);
+            mNotificationManager.createNotificationChannel(mChannel);
+        }
         registerReceiver(getBtStateReceiver(), new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
         mObd2Gateway = new OBD2Gateway(this) {
             @Override
@@ -85,10 +90,10 @@ public class OBD2Service extends Service {
     public void onDestroy() {
         Timber.d("Service.onDestroy");
         mObd2Gateway.stop();
-        stopService(new Intent(this, DeviceHiveApiService.class));
         if (mReceiver != null) {
             unregisterReceiver(mReceiver);
         }
+        mObd2Gateway = null;
         mNotificationManager.cancel(LE_NOTIFICATION_ID);
         super.onDestroy();
         Log.d(TAG, "OBD2Service was destroyed");
@@ -107,7 +112,7 @@ public class OBD2Service extends Service {
     }
 
     private void notifyNewState(final String text) {
-        Timber.d("Service.onUnbind");
+        Timber.d("notifyNewState");
         mBuilder.setContentText(text);
         mNotificationManager.notify(LE_NOTIFICATION_ID, mBuilder.build());
     }
@@ -144,7 +149,7 @@ public class OBD2Service extends Service {
         stackBuilder.addNextIntent(resultIntent);
         final PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        mBuilder = new NotificationCompat.Builder(this)
+        mBuilder = new NotificationCompat.Builder(this, "1")
                 .setContentText(getString(R.string.notification_disconnected))
                 .setContentTitle(getString(R.string.device_hive))
                 .setSmallIcon(R.drawable.ic_le_service)

@@ -1,5 +1,6 @@
 package com.dataart.obd2;
 
+import android.support.multidex.MultiDex;
 import android.support.multidex.MultiDexApplication;
 
 /**
@@ -18,7 +19,7 @@ public class OBD2Application extends MultiDexApplication {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        MultiDex.install(this);
         application = this;
     }
 

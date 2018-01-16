@@ -2,23 +2,34 @@ package com.dataart.obd2.obd2_gateway;
 
 import android.content.Context;
 
-import com.dataart.android.devicehive.Command;
-import com.dataart.android.devicehive.Notification;
-import com.dataart.android.devicehive.device.CommandResult;
-import com.dataart.android.devicehive.device.future.SimpleCallableFuture;
 import com.dataart.obd2.R;
-import com.dataart.obd2.devicehive.DeviceHive;
 import com.dataart.obd2.devicehive.DevicePreferences;
+import com.github.devicehive.client.model.CommandFilter;
+import com.github.devicehive.client.model.DHResponse;
+import com.github.devicehive.client.model.DeviceCommandsCallback;
+import com.github.devicehive.client.model.FailureData;
+import com.github.devicehive.client.model.Parameter;
+import com.github.devicehive.client.service.Device;
+import com.github.devicehive.client.service.DeviceCommand;
+import com.github.devicehive.client.service.DeviceHive;
 import com.github.pires.obd.commands.control.TroubleCodesCommand;
 import com.github.pires.obd.commands.protocol.ObdRawCommand;
 import com.github.pires.obd.exceptions.ResponseException;
-import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
-import java.io.IOError;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
+
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
+import timber.log.Timber;
 
 /**
  * Created by Nikolay Khabarov on 8/8/16.
@@ -26,13 +37,38 @@ import java.util.HashSet;
 
 public abstract class OBD2Gateway {
     private final static String TAG = OBD2Gateway.class.getSimpleName();
+
+    /**
+     * Command status "Completed" value.
+     */
+    public static final String STATUS_COMLETED = "Completed";
+
+    /**
+     * Command status "Failed" value.
+     */
+    public static final String STATUS_FAILED = "Failed";
+
+    /**
+     * Command status "Failed" value.
+     */
+    public static final String STATUS_WAITING = "Waiting";
+    public static final String GET_TROUBLE_CODES = "GetTroubleCodes";
+    public static final String RUN_COMMAND = "RunCommand";
+    public static final String MODE = "mode";
+    public static final String PID = "pid";
+    public static final String OBD_2 = "obd2";
+    public static final String PARAMETERS = "parameters";
+    public static final String GET = "get";
+    public static final String RESULT = "result";
+
+
     private Context mContext;
     private OBD2Reader mObd2Reader;
-    private DeviceHive mDeviceHive;
+    private DeviceHive deviceHive;
+    PublishSubject<DeviceCommand> source;
 
     public OBD2Gateway(Context context) {
         mContext = context;
-        mDeviceHive = DeviceHive.newInstance(mContext);
         final DevicePreferences prefs = new DevicePreferences();
         mObd2Reader = new OBD2Reader(prefs.getOBD2Mac()) {
             @Override
@@ -54,102 +90,173 @@ public abstract class OBD2Gateway {
             }
 
             @Override
-            protected void dataCallback(OBD2Data data) {
-                Method[] methods = OBD2Data.class.getDeclaredMethods();
-                HashMap<String, Object> map = new HashMap<String, Object>();
-                for (Method method : methods) {
-                    String name = method.getName();
-                    if (name.startsWith("get")) {
-                        Object obj = null;
-                        try {
-                            obj = method.invoke(data);
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        } catch (InvocationTargetException e) {
-                            e.printStackTrace();
-                        }
-                        if (obj != null) {
-                            map.put(name.substring(3), obj);
+            protected void dataCallback(OBD2Data d) {
+                Observable.just(d).observeOn(Schedulers.io()).subscribeOn(Schedulers.io()).subscribe(data -> {
+                    DHResponse<Device> deviceDHResponse = deviceHive.getDevice(prefs.getGatewayId());
+                    Timber.d(deviceDHResponse.toString());
+
+                    if (!deviceDHResponse.isSuccessful()) {
+                        return;
+                    }
+                    Device device = deviceDHResponse.getData();
+                    Method[] methods = OBD2Data.class.getDeclaredMethods();
+
+                    //Full info data from obd
+                    HashMap<String, Object> map = new HashMap<>();
+
+                    for (Method method : methods) {
+                        String name = method.getName();
+                        if (name.startsWith(GET)) {
+                            Object obj = null;
+                            try {
+                                obj = method.invoke(data);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                e.printStackTrace();
+                            }
+                            if (obj != null) {
+                                map.put(name.substring(3), obj);
+                            }
                         }
                     }
-                }
-                mDeviceHive.sendNotification(new Notification("obd2", map));
+                    List<Parameter> parameters = new ArrayList<>();
+                    for (String s : map.keySet()) {
+
+                        parameters.add(new Parameter(s, map.get(s).toString()));
+                    }
+                    device.sendNotification(OBD_2, parameters);
+                });
             }
         };
     }
 
     public void start() {
-        final DevicePreferences prefs = new DevicePreferences();
-        mDeviceHive.setApiEnpointUrl(prefs.getServerUrl());
-
-        mDeviceHive.setCommandListener(commandListener);
-        if (!mDeviceHive.isRegistered()) {
-            mDeviceHive.registerDevice();
-        }
-        mDeviceHive.startProcessingCommands();
+        DevicePreferences prefs = new DevicePreferences();
+        Timber.d(prefs.getJwtRefreshToken());
+        Timber.d(prefs.getGatewayId());
+        deviceHive = DeviceHive.getInstance()
+                .init(prefs.getServerUrl(), prefs.getJwtRefreshToken());
 
         mObd2Reader.start();
+        subscribeOnCommands();
     }
 
     public void stop() {
+        if (source != null) {
+            source.onComplete();
+        }
         mObd2Reader.stop();
-        mDeviceHive.removeCommandListener();
-        mDeviceHive.stopProcessingCommands();
     }
 
-    private final DeviceHive.CommandListener commandListener = new DeviceHive.CommandListener() {
-        @Override
-        public SimpleCallableFuture<CommandResult> onDeviceReceivedCommand(Command command) {
-            String status = CommandResult.STATUS_FAILED;
-            String result = "";
+    public void subscribeOnCommands() {
+        source = PublishSubject.create();
+        source.subscribeOn(Schedulers.io())
+                .subscribe(getCommandObservable());
+    }
 
-            final String name = command.getCommand();
-            if (name.equalsIgnoreCase("GetTroubleCodes")) {
-                TroubleCodesCommand troubleCodesCommand = new TroubleCodesCommand();
-                if (mObd2Reader.runCommand(troubleCodesCommand)) {
-                    String codes = troubleCodesCommand.getFormattedResult();
-                    if (codes != null) {
-                        final String codeArray[] = codes.split("\n");
-                        return new SimpleCallableFuture<>(new CommandResult(
-                                CommandResult.STATUS_COMLETED, new Gson().toJson(codeArray)));
-                    } else {
-                        status = CommandResult.STATUS_FAILED;
-                        result = "Failed to read codes";
+
+    private Observer<DeviceCommand> getCommandObservable() {
+        return new Observer<DeviceCommand>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                new Thread(() -> {
+                    DevicePreferences prefs = new DevicePreferences();
+                    DHResponse<Device> deviceDHResponse = deviceHive.getDevice(prefs.getGatewayId());
+                    Timber.d(deviceDHResponse.toString());
+                    if (!deviceDHResponse.isSuccessful()) {
+                        return;
                     }
-                } else {
-                    status = CommandResult.STATUS_FAILED;
-                    result = "Failed to run troubleCodesCommand";
-                }
-            } else if (name.equalsIgnoreCase("RunCommand")) {
-                final HashMap<String, Object> params = (HashMap<String, Object>) command.getParameters();
-                final String mode = (params != null) ? (String) params.get("mode") : null;
-                final String pid = (params != null) ? (String) params.get("pid") : null;
-                if (mode == null || pid == null) {
-                    status = CommandResult.STATUS_FAILED;
-                    result = "Please specify mode and pid parameters";
-                } else {
-                    ObdRawCommand obdCommand = new ObdRawCommand(mode + " " + pid);
-                    boolean commandRes = true;
-                    try  {
-                        commandRes = mObd2Reader.runCommand(obdCommand);
-                    } catch (ResponseException e) {
-                        // ignore response error and send it as is
-                    }
-                    if (commandRes) {
-                        status = CommandResult.STATUS_COMLETED;
-                        result = obdCommand.getFormattedResult();
-                    } else {
-                        status = CommandResult.STATUS_FAILED;
-                        result = "Failed to run command";
-                    }
-                }
-            } else {
-                status = CommandResult.STATUS_FAILED;
-                result = mContext.getString(R.string.unknown_commnad);
+                    Device device = deviceDHResponse.getData();
+                    CommandFilter commandFilter = new CommandFilter();
+                    commandFilter.setCommandNames();
+                    device.subscribeCommands(commandFilter, new DeviceCommandsCallback() {
+                        @Override
+                        public void onSuccess(List<DeviceCommand> list) {
+                            DeviceCommand command = list.get(0);
+                            onNext(command);
+                        }
+
+                        @Override
+                        public void onFail(FailureData failureData) {
+                            onError(new Throwable(failureData.getMessage()));
+                        }
+                    });
+                }).start();
             }
-            return new SimpleCallableFuture<>(new CommandResult(status, new Gson().toJson(result)));
-        }
-    };
+
+            @Override
+            public void onNext(DeviceCommand command) {
+                String status;
+                String result;
+                String name = command.getCommandName();
+                Timber.d(command.toString());
+                if (name.equalsIgnoreCase(GET_TROUBLE_CODES)) {
+                    TroubleCodesCommand troubleCodesCommand = new TroubleCodesCommand();
+                    if (mObd2Reader.runCommand(troubleCodesCommand)) {
+                        String codes = troubleCodesCommand.getFormattedResult();
+                        if (codes != null) {
+                            String codeArray[] = codes.split("\n");
+                            result = Arrays.toString(codeArray);
+                            status = STATUS_COMLETED;
+                        } else {
+                            status = STATUS_FAILED;
+                            result = "Failed to read codes";
+                        }
+                    } else {
+                        status = STATUS_FAILED;
+                        result = "Failed to run troubleCodesCommand";
+                    }
+                } else if (name.equalsIgnoreCase(RUN_COMMAND)) {
+                    JsonObject params = command.getParameters();
+
+                    final String mode = (params != null) ? params.get(MODE).getAsString() : null;
+                    final String pid = (params != null) ? params.get(PID).getAsString() : null;
+
+                    if (mode == null || pid == null) {
+                        status = STATUS_FAILED;
+                        result = "Please specify mode and pid parameters";
+                    } else {
+                        ObdRawCommand obdCommand = new ObdRawCommand(mode + " " + pid);
+                        boolean commandRes = true;
+                        try {
+                            commandRes = mObd2Reader.runCommand(obdCommand);
+                        } catch (ResponseException e) {
+                            // ignore response error and send it as is
+                        }
+                        if (commandRes) {
+                            status = STATUS_COMLETED;
+                            result = obdCommand.getFormattedResult();
+                        } else {
+                            status = STATUS_FAILED;
+                            result = "Failed to run command";
+                        }
+                    }
+                } else {
+                    status = STATUS_FAILED;
+                    result = mContext.getString(R.string.unknown_commnad);
+                }
+                command.setStatus(status);
+
+                JsonObject resultJson = new JsonObject();
+                resultJson.addProperty(RESULT, result);
+
+                command.setResult(resultJson);
+                command.updateCommand();
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        };
+
+
+    }
+
 
     public abstract void updateState(String text);
 }

@@ -1,8 +1,8 @@
 package com.dataart.obd2.devicehive;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 
 import com.dataart.obd2.OBD2Application;
 
@@ -16,8 +16,8 @@ public class DevicePreferences {
     private final static String KEY_GATEWAY_ID = NAMESPACE
             .concat(".KEY_GATEWAY_ID");
 
-    private final static String KEY_ACCESSKEY= NAMESPACE
-            .concat(".KEY_ACCESSKEY");
+    private final static String JWT_REFRESH_TOKEN = NAMESPACE
+            .concat(".KEY_JWT_REFRESH_TOKEN");
 
     private final static String KEY_OBD2MAC= NAMESPACE
             .concat(".OBD2_MAC");
@@ -45,44 +45,34 @@ public class DevicePreferences {
     public String getOBD2Mac() {
         return preferences.getString(KEY_OBD2MAC, null);
     }
-
+    @SuppressLint("ApplySharedPref")
     public void setServerUrlSync(String serverUrl) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_SERVER_URL, serverUrl);
         editor.commit();
     }
-
+    @SuppressLint("ApplySharedPref")
     public void setGatewayIdSync(String gatewayId) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_GATEWAY_ID, gatewayId);
         editor.commit();
     }
 
-    public String getAccessKey() {
-        return preferences.getString(KEY_ACCESSKEY, null);
+    public String getJwtRefreshToken() {
+        return preferences.getString(JWT_REFRESH_TOKEN, null);
     }
 
-
-    public void setAccessKeySync(String accessKey) {
+    @SuppressLint("ApplySharedPref")
+    public void setJwtRefreshTokenSync(String jwtRefreshToken) {
         final SharedPreferences.Editor editor = preferences.edit();
-        editor.putString(KEY_ACCESSKEY, accessKey);
+        editor.putString(JWT_REFRESH_TOKEN, jwtRefreshToken);
         editor.commit();
     }
-
+    @SuppressLint("ApplySharedPref")
     public void setOBD2MacSync(String mac) {
         final SharedPreferences.Editor editor = preferences.edit();
         editor.putString(KEY_OBD2MAC, mac);
         editor.commit();
     }
 
-    public void setCredentialsAsync(final String accessKey) {
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                setAccessKeySync(accessKey);
-                return null;
-            }
-
-        }.execute();
-    }
 }
