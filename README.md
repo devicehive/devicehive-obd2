@@ -5,7 +5,7 @@ DeviceHive OBD2 Gateway collect vehicle's self-diagnostic information and send i
 
 ![](obd2-architecture.png?raw=true)
 
-**Usaga**
+**Usags**
 ------------------
 - Pair your ELM327 adaptor with you devices using system Bluetooth settings
 - Install and run this app
